@@ -3,7 +3,6 @@ import binascii
 import re
 import error
 import Note
-import Track
 import warnings
 
 #TODO note position and duration need to be rounded and even then they are not rounded to an accurate value
