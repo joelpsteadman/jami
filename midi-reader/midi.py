@@ -11,8 +11,8 @@ n2 = ""
 b2 = ""
 b3 = ""
 channel = 0
-fp = 0 #file_position
-remaining_track_len = 0 #to check that the track length specified is correct
+fp = 0
+remaining_track_len = 0
 new_event_type = True
 #TODO note position and duration need to be rounded and even then they are not rounded to an accurate value
 def main(file_name):
