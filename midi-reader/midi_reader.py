@@ -4,6 +4,7 @@ import re
 import error
 import Note
 import warnings
+from music_classes import Song
 
 #global variables
 n1 = ""
@@ -14,8 +15,14 @@ channel = 0
 fp = 0
 remaining_track_len = 0
 new_event_type = True
+num_events = 0
+
 #TODO note position and duration need to be rounded and even then they are not rounded to an accurate value
-def main(file_name):
+def get_info(file_name):
+	channels = {}
+	def set_channel(channel):
+		channels[channel] = 1
+	song = Song()
 	global fp,remaining_track_len, channel, n1, n2, b2, b3
 	f = open(file_name, "rb")
 	data = "" #string containing the data of the file in hex
@@ -67,33 +74,28 @@ def main(file_name):
 			if i % 2 == 1:
 				string += " "
 			i += 1
-		print string, "= ", explanation, value
+		#print string, "= ", explanation, value
 
 	#read header chunk:
 
 	#check header chunk type
 	if re.match(r'4d546864', data) == None:
 		raise error.MidiException("File does not begin with \"MThd\"")
-	else:
-		print_bytes("4d546864", "\"MThd\"")
 	fp = 8
 	#check header length
 	if re.match(r'00000006', data[fp:fp+8]) == None:
 		raise error.MidiException("Unrecognized header length: expected \"00000006\", but got:", data[fp:fp+8])
-	else:
-		print_bytes("00000006", "Header length: 6 bytes")
 	fp += 8
 	#check format
 	midi_format = int(data[fp:fp+4], 16)
 	if midi_format > 2:
 		raise error.MidiException("Unrecognized format: expected 0,1, or 2, but got:", int(data[fp:fp+4], 16))
-	else:
-		print_bytes(data[fp:fp+4], "Midi format:", midi_format)
 	fp += 4
 	#get number of tracks
 	num_tracks = int(data[fp:fp+4], 16)
 	fp += 4
 	print_bytes(data[fp:fp+4], "Number of tracks:", num_tracks)
+	song.num_tracks = num_tracks
 	#get division data 
 	division = data[fp:fp+4]
 	print_bytes(data[fp:fp+4], "Division:", division)
@@ -102,12 +104,12 @@ def main(file_name):
 	ticks_per_quarter_note = int(division[1:], 16)
 	if int(frmt, 16) < 8:
 		print_bytes(division[1:], "Ticks per quarter note:", ticks_per_quarter_note, 1)
-	else:
-		print "Negative two's compliment of", int(division[1:2], 16) - 128, "frames / second"
-		print int(data[fp:fp+2],16), "ticks / frame"
+	#else:
+		#print "Negative two's compliment of", int(division[1:2], 16) - 128, "frames / second"
+		#print int(data[fp:fp+2],16), "ticks / frame"
 	fp += 4
 		
-	print "READ HEADER CHUNK OF SIZE", fp, "RESTARTING fp at position", fp
+	#print "READ HEADER CHUNK OF SIZE", fp, "RESTARTING fp at position", fp
 	#read track chunks
 	for i in range(0, num_tracks):
 		'''READS EACH TRACK CHUNK'''
@@ -133,7 +135,7 @@ def main(file_name):
 		no_event_head = False
 		data = data[fp:]
 		fp = 0
-		print "RESET TRACK", i+1, "fp TO 0 AT BEGINNING OF TRACK DATA"
+		#print "RESET TRACK", i+1, "fp TO 0 AT BEGINNING OF TRACK DATA"
 		def print_data(data):
 			'''pretty-prints the data bytes for all events in a track chunk
 			'data' is a string of hex values representing the data of the track chunk
@@ -145,7 +147,7 @@ def main(file_name):
 			for i in range(0, len(data)):
 				data_string += data[i]
 				if (i+1) % l == 0 or i == len(data)-1:
-					print data_string
+					#print data_string
 					if i < 1000:
 						for j in range(0,(l+3)/4):
 							space = len(str(x+j*4))
@@ -158,7 +160,7 @@ def main(file_name):
 							index_string += str(x+j*8)
 							for z in range(0, 8-space):
 								index_string += " "
-					print index_string
+					#print index_string
 					index_string = ""
 					x += l
 					data_string = ""
@@ -166,8 +168,9 @@ def main(file_name):
 		global new_event_type
 		new_event_type = False
 		while remaining_track_len > 0:
+			global num_events
 			'''READS EACH EVENT'''
-			print "-------------------"
+			#print "-------------------"
 			#print "len(data):", len(data)
 			if len(data) - fp <= 6:
 				if data[-6:] != 'ff2f00':
@@ -208,14 +211,14 @@ def main(file_name):
 				binary_value = ""
 				while int(data[fp + i:fp + i + 2], 16) >= 128:
 					binary_string = bin(int(data[fp + i: fp + i + 2], 16))[2:].zfill(8)
-					print binary_string
+					#print binary_string
 					binary_value += binary_string[1:8]
 					i += 2
 				binary_string = bin(int(data[fp + i: fp + i + 2], 16))[2:].zfill(8)
 				binary_value += binary_string[1:8]
 				length = int(binary_value, 2)
 				advance(i+2)
-				print "Variable length:", length
+				#print "Variable length:", length
 				return length
 
 			def read_note_off(x):
@@ -231,15 +234,15 @@ def main(file_name):
 				velocity = int(data[fp+2:fp+4], 16)
 				#set channel
 				if x == None:
-					channel = int(data[fp], 16)
+					set_channel(int(data[fp], 16))
 					print_bytes(data[fp-2:fp+4], "Note off c nn vv")
 				else:
 					print_bytes(data[fp:fp+4], "nn vv")
-				print "Channel:", channel
+				#print "Channel:", channel
 				#find note and 
 					#if in list: create note object
 					#else raise error: note ended that was not started
-				print "Pop Note Command at fp:", fp
+				#print "Pop Note Command at fp:", fp
 				advance(4)#pop note event is 3 bytes long
 
 			def read_note_on(x):
@@ -250,11 +253,11 @@ def main(file_name):
 				velocity = int(data[fp+2:fp+4], 16)
 				#set channel
 				if x == None:
-					channel = int(data[fp-1], 16) + 1
+					set_channel(int(data[fp-1], 16) + 1)
 					print_bytes(data[fp-2:fp+4], "Note off c nn vv")
 				else:
 					print_bytes(data[fp:fp+4], "nn vv")
-				print "Channel:", channel
+				#print "Channel:", channel
 				note_tuple = (key, channel, total_delta_time)
 				if velocity == 0:
 					#if in list: create note object
@@ -264,16 +267,16 @@ def main(file_name):
 						if nt[0] == key and nt[1] == channel:
 							duration = total_delta_time - nt[2]
 							note = Note.Note(total_delta_time, duration, key, channel)
-							print "Note created:", note.to_string(ticks_per_quarter_note)
+							#print "Note created:", note.to_string(ticks_per_quarter_note)
 							notes[channel].append(note)
 							found = True
 							list_of_notes.remove(nt) #remove from list_of_notes
-					if not found:
-						print "Note created with velocity of 0 at position"
+					#if not found:
+						#print "Note created with velocity of 0 at position"
 				else:
 					#add note to list
 					list_of_notes.append(note_tuple)
-				print "Add/Pop Note Command at fp:", fp
+				#print "Add/Pop Note Command at fp:", fp
 				advance(4)#add note event is 3 bytes long
 
 			def read_polyphonic():
@@ -281,14 +284,14 @@ def main(file_name):
 				#check/set key/velocity
 				#set channel
 				#send message
-				print "Polyphonic Note at fp:", fp
+				#print "Polyphonic Note at fp:", fp
 				advance(4)#polyphonic note event is 3 bytes long
 
 			def read_control_change():
 
 				#check control#, control_val
 				#send message
-				print "Control Change at fp:", fp
+				#print "Control Change at fp:", fp
 				print_bytes(data[fp:fp+4], "Control change")
 				advance(4)#control change event is 3 bytes long
 
@@ -296,7 +299,7 @@ def main(file_name):
 
 				#check new_program_#
 				#send message
-				print "Program Change at fp:", fp
+				#print "Program Change at fp:", fp
 				print_bytes(data[fp-2:fp+2], "Program change to", int(data[fp:fp+2], 16))
 				advance(2)#program change event is 2 bytes long
 
@@ -304,14 +307,14 @@ def main(file_name):
 
 				#check channel_pressure_val
 				#send message
-				print "Channel Key Pressure of", data[fp:fp+2], "at fp:", fp
+				#print "Channel Key Pressure of", data[fp:fp+2], "at fp:", fp
 				advance(2)#channel key pressure event is 2 bytes long
 
 			def read_pitch_bend():
 
 				#check msb, lsb
 				#send message
-				print "Pitch Bend at fp:", fp
+				#print "Pitch Bend at fp:", fp
 				advance(4)#pitch bend event is 3 bytes long
 
 
@@ -346,7 +349,7 @@ def main(file_name):
 				raise error.MidiException("Cue meta event found at position", fp, "(Cue meta events not yet handled in program)")
 
 			def read_program_name():
-				print "Program name meta event read at position", fp
+				#print "Program name meta event read at position", fp
 				length = 2 * (int(data[fp:fp+2], 16))
 				program_name = data[fp:fp+length]
 				advance(length+2)
@@ -359,7 +362,7 @@ def main(file_name):
 				elif int(data[fp+2:fp+4], 16) > 15:
 					raise error.MidiException("Invalid MIDI Channel Prefix meta event found at position", fp+2, "(expected 00-0f but got", data[fp+2:fp+4],")")
 				else:
-					channel = data[fp+2:fp+4] + 1
+					set_channel(data[fp+2:fp+4] + 1)
 					advance(4)
 					return channel
 
@@ -373,7 +376,7 @@ def main(file_name):
 
 			def read_end_of_track():
 				if data[fp:fp+2] == '00':
-					print "********************YAAAAAAY********************"
+					#print "********************YAAAAAAY********************"
 					advance(2)
 				else:
 					raise error.MidiException("Unrecognized End of Track meta event found at position", fp, "found", data[fp:fp+2], "but expected 0x00")
@@ -384,7 +387,7 @@ def main(file_name):
 				else:
 					mpq = int(data[fp+2:fp+8], 16)
 
-				print "Tempo set to", mpq, "microseconds per quarter note", "(", 60000000/mpq, " beats per minute)"
+				#print "Tempo set to", mpq, "microseconds per quarter note", "(", 60000000/mpq, " beats per minute)"
 				advance(8)
 
 			def read_SMTPE_offset():
@@ -398,7 +401,9 @@ def main(file_name):
 					denominator = 2 ** int(data[fp+4:fp+6], 16)
 					cpmt = int(data[fp+6:fp+8], 16)
 					nonp = int(data[fp+8:fp+10], 16)
-				print "Time signature:", numerator, "/", denominator
+					time_sig = str(numerator) + "/" + str(denominator)
+					song.set_time_sig(time_sig)
+					#print "Time signature:", numerator, "/", denominator
 				advance(10)
 
 			def read_key_signature():
@@ -438,9 +443,11 @@ def main(file_name):
 									3  : "F sharp minor",
 									4  : "C sharp minor"}
 					if mode == "00":
-						print "Key signature:", majorkeys[numsharps]
+						song.set_key(majorkeys[numsharps])
+						#print "Key signature:", majorkeys[numsharps]
 					else:
-						print "Key signature:", minorkeys[numsharps]
+						song.set_key(minorkeys[numsharps])
+						#print "Key signature:", minorkeys[numsharps]
 				advance(6)
 
 			def read_sequence_specific():
@@ -448,8 +455,8 @@ def main(file_name):
 
 			def determine_event(x):
 				#print "x:", x
-				if x == None:
-					print "fp:", fp
+				#if x == None:
+					#print "fp:", fp
 				global new_event_type, n1, n2, b2, b3
 				if x == None:
 					new_event_type = True
@@ -574,7 +581,8 @@ def main(file_name):
 								advance(4)
 							name_hex = read_program_name()
 							program_name = name_hex.decode("hex")
-							print "Program Name:", program_name
+							song.set_title(program_name)
+							#print "Program Name:", program_name
 							#print "fp is now:", fp
 						elif b2 == '0a':
 							#Composer Name
@@ -582,20 +590,20 @@ def main(file_name):
 							if x == None:
 								advance(4)
 							program_name = read_program_name().decode("hex")
-							print "Composer Name:", program_name
+							#print "Composer Name:", program_name
 							#print "fp is now:", fp
 						elif b2 == '20':
 							#MIDI Channel Prefix
 							if x == None:
 								advance(4)
-							channel = read_midi_channel_prefix()
-							print "MIDI channel set to", channel
+							set_channel(read_midi_channel_prefix())
+							#print "MIDI channel set to", channel
 						elif b2 == '21':
 							#MIDI Port
 							if x == None:
 								advance(4)
 							port = read_midi_port()
-							print "MIDI port set to port", port
+							#print "MIDI port set to port", port
 						elif b2 == '2f':
 							#End of Track
 							if x == None:
@@ -663,15 +671,17 @@ def main(file_name):
 					new_event_type = False
 					determine_event(last_event_type)
 			determine_event(None)
+			num_events += 1
 			if new_event_type:
 				last_event_type = data[temp_fp:temp_fp+6]
-
-	print file_name, "is a valid MIDI file."
+	song.num_events = num_events
+	#print file_name, "is a valid MIDI file."
 	number_of_notes = 0
 	for c in notes:
 		for n in notes[c]:
 			number_of_notes += 1
-			print n.to_string(ticks_per_quarter_note)
-	print "Number of notes in file:", number_of_notes
-
+			#print n.to_string(ticks_per_quarter_note)
+	#print "Number of notes in file:", number_of_notes
+	song.set_num_channels(len(channels))
+	return song
 
