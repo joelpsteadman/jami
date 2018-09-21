@@ -53,17 +53,44 @@ class Note:
 	start = 0.0
 	duration = 0.0
 	channel = 0
+
 	def __init__(self):
 		self.pitch = 0
 		self.start = 0
-		self.end = 0
+		self.duration = 0
 		self.channel = 0
-	def __init__(self, pitch, start, end, channel):
+
+	def __init__(self, pitch, start, duration, channel):
 		self.pitch = pitch
 		self.start = start
-		self.end = end
+		self.duration = duration
 		self.channel = channel
 
+	def to_string(self, ticks_per_quarter_note = None):
+
+			notes = {	0 : 'C',
+						1 : 'C#',
+						2 : 'D',
+						3 : 'D#',
+						4 : 'E',
+						5 : 'F',
+						6 : 'F#',
+						7 : 'G',
+						8 : 'G#',
+						9 : 'A',
+						10: 'A#',
+						11: 'B',
+						}
+			string = ""
+			note = str(notes[self.pitch % 12]) + str(self.pitch / 12 + 1)
+			if ticks_per_quarter_note == None:
+				string = "Channel:"
+				string += self.channel, "Pitch:", self.pitch, "start:", self.start*960, "seconds", "Duration:", self.duration*960, "seconds"
+			else:
+				string = "Channel: "
+				string += str(self.channel) + ", Pitch: " + note + ", start: " + str(round(self.start / float(ticks_per_quarter_note), 1)) + " quarter notes, Duration: " + str(round(self.duration / float(ticks_per_quarter_note), 1)) + " quarter notes"
+			return string
+			
 	def overlap(self, note):
 		a = self.start
 		b = self.start + self.duration

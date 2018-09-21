@@ -2,9 +2,8 @@ import sys
 import binascii
 import re
 import error
-import Note
 import warnings
-from music_classes import Song
+from music_classes import Song, Note
 
 #global variables
 n1 = ""
@@ -231,31 +230,6 @@ def get_info(file_name, verbose):
 				return length
 
 			def read_note_off(x):
-
-				global channel
-				#check/set key/velocity
-				warnings.warn("Note off event not fully implemented")
-				if int(data[fp:fp+2], 16) > 127:
-					raise error.MidiException("Invalid note key at position", fp, ". Expected 0x00-0x7f, but got", b2)
-				key = int(data[fp+1:fp+3], 16)
-				if int(data[fp+2:fp+4], 16) > 127:
-					raise error.MidiException("Invalid note velocity at position", fp, ". Expected 0x00-0x7f, but got", b3)
-				velocity = int(data[fp+2:fp+4], 16)
-				#set channel
-				if x == None:
-					set_channel(int(data[fp], 16))
-					print_bytes(data[fp-2:fp+4], "Note off c nn vv")
-				else:
-					print_bytes(data[fp:fp+4], "nn vv")
-				print_if_verbose( "Channel:", channel)
-				#find note and 
-					#if in list: create note object
-					#else raise error: note ended that was not started
-				print_if_verbose( "Pop Note Command at fp:", fp)
-				advance(4)#pop note event is 3 bytes long
-
-			def read_note_on(x):
-
 				global channel
 				#check/set key/velocity
 				key = int(data[fp:fp+2], 16)
@@ -267,6 +241,35 @@ def get_info(file_name, verbose):
 				else:
 					print_bytes(data[fp:fp+4], "nn vv")
 				print_if_verbose( "Channel:", channel)
+				#if in list: create note object
+				for nt in list_of_notes: 
+					#create note object
+					found = False
+					if nt[0] == key and nt[1] == channel:
+						duration = total_delta_time - nt[2]
+						note = Note(total_delta_time, duration, key, channel)
+						print_if_verbose( "Note created:", note.to_string(ticks_per_quarter_note))
+						notes[channel].append(note)
+						found = True
+						list_of_notes.remove(nt) #remove from list_of_notes
+				if not found:
+					raise error.MidiException("Invalid note off event at position", fp, ". No such note is currently on")
+				print_if_verbose( "Add/Pop Note Command at fp:", fp)
+				advance(4)#add note event is 3 bytes long
+
+			def read_note_on(x):
+
+				global channel
+				#check/set key/velocity
+				key = int(data[fp:fp+2], 16)
+				velocity = int(data[fp+2:fp+4], 16)
+				#set channel
+				if x == None:
+					set_channel(int(data[fp-1], 16) + 1)
+					print_bytes(data[fp-2:fp+4], "Note on c nn vv")
+				else:
+					print_bytes(data[fp:fp+4], "nn vv")
+				print_if_verbose( "Channel:", channel)
 				note_tuple = (key, channel, total_delta_time)
 				if velocity == 0:
 					#if in list: create note object
@@ -275,7 +278,7 @@ def get_info(file_name, verbose):
 						found = False
 						if nt[0] == key and nt[1] == channel:
 							duration = total_delta_time - nt[2]
-							note = Note.Note(total_delta_time, duration, key, channel)
+							note = Note(total_delta_time, duration, key, channel)
 							print_if_verbose( "Note created:", note.to_string(ticks_per_quarter_note))
 							notes[channel].append(note)
 							found = True
@@ -284,6 +287,7 @@ def get_info(file_name, verbose):
 						print_if_verbose( "Note created with velocity of 0 at position")
 				else:
 					#add note to list
+					print_if_verbose("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 					list_of_notes.append(note_tuple)
 				print_if_verbose( "Add/Pop Note Command at fp:", fp)
 				advance(4)#add note event is 3 bytes long
@@ -326,27 +330,20 @@ def get_info(file_name, verbose):
 				print_if_verbose( "Pitch Bend at fp:", fp)
 				advance(4)#pitch bend event is 3 bytes long
 
-
-
 			def read_sysex():
 				raise error.MidiException("Sysex event found at position", fp, "(sysex events not yet handled in program)")
 
-
-
 			def read_sequence_number():
-				warnings.warn("Sequence Number meta event found at position", fp, "(Sequence Number meta events not yet handled in program)")
+				raise error.MidiException("Sequence Number meta event found at position", fp, "(Sequence Number meta events not yet handled in program)")
 
 			def read_text():
 				raise error.MidiException("Text meta event found at position", fp, "(Text meta events not yet handled in program)")
 
 			def read_copyright_notice():
-				warnings.warn("Copyright notice meta event found at position", fp, "(Copyright notice meta events not yet handled in program)")
+				raise error.MidiException("Copyright notice meta event found at position", fp, "(Copyright notice meta events not yet handled in program)")
 
 			def read_sequence_track_name():
-				warnings.warn("Sequence/Track Name meta event found at position", fp, "(Sequence/Track Name meta events not yet handled in program)")
-
-			def read_instrument_name():
-				warnings.warn("Instrument Name meta event found at position", fp, "(Instrument Name meta events not yet handled in program)")
+				raise error.MidiException("Sequence/Track Name meta event found at position", fp, "(Sequence/Track Name meta events not yet handled in program)")
 
 			def read_lyric():
 				raise error.MidiException("Lyric meta event found at position", fp, "(Lyric meta events not yet handled in program)")
@@ -371,7 +368,7 @@ def get_info(file_name, verbose):
 				elif int(data[fp+2:fp+4], 16) > 15:
 					raise error.MidiException("Invalid MIDI Channel Prefix meta event found at position", fp+2, "(expected 00-0f but got", data[fp+2:fp+4],")")
 				else:
-					set_channel(data[fp+2:fp+4] + 1)
+					set_channel(int(data[fp+2:fp+4]) + 1)
 					advance(4)
 					return channel
 
@@ -565,13 +562,15 @@ def get_info(file_name, verbose):
 								advance(4)
 							#read_sequence_track_name()
 							seq_track_name = get_text().decode("hex")
-							print "Sequence/Track Name:", seq_track_name
-							print "fp is now:", fp
+							print_if_verbose( "Sequence/Track Name:", seq_track_name)
+							print_if_verbose( "fp is now:", fp)
 						elif b2 == '04':
 							#Instrument Name
 							if x == None:
 								advance(4)
-							read_instrument_name()
+							instrument_name = get_text().decode("hex")
+							print_if_verbose( "Instrument Name:", instrument_name)
+							print_if_verbose( "fp is now:", fp)
 						elif b2 == '05':
 							#Lyric
 							if x == None:
@@ -693,7 +692,7 @@ def get_info(file_name, verbose):
 		for n in notes[c]:
 			number_of_notes += 1
 			print_if_verbose( n.to_string(ticks_per_quarter_note))
-	print_if_verbose( "Number of notes in file:", number_of_notes)
+	print_if_verbose( "Number of notes in file: ", number_of_notes)
 	song.set_num_channels(len(channels))
 	return song
 
