@@ -16,9 +16,18 @@ fp = 0
 remaining_track_len = 0
 new_event_type = True
 num_events = 0
+#Music Tools
 
 #TODO note position and duration need to be rounded and even then they are not rounded to an accurate value
-def get_info(file_name):
+def get_info(file_name, verbose):
+
+	def print_if_verbose(*strings):
+		if verbose:
+			s = ""
+			for string in strings:
+				s += str(string)
+			print s
+
 	channels = {}
 	def set_channel(channel):
 		channels[channel] = 1
@@ -74,7 +83,7 @@ def get_info(file_name):
 			if i % 2 == 1:
 				string += " "
 			i += 1
-		#print string, "= ", explanation, value
+		print_if_verbose( string, "= ", explanation, value )
 
 	#read header chunk:
 
@@ -105,11 +114,11 @@ def get_info(file_name):
 	if int(frmt, 16) < 8:
 		print_bytes(division[1:], "Ticks per quarter note:", ticks_per_quarter_note, 1)
 	#else:
-		#print "Negative two's compliment of", int(division[1:2], 16) - 128, "frames / second"
-		#print int(data[fp:fp+2],16), "ticks / frame"
+		print_if_verbose( "Negative two's compliment of", int(division[1:2], 16) - 128, "frames / second")
+		print_if_verbose( int(data[fp:fp+2],16), "ticks / frame")
 	fp += 4
 		
-	#print "READ HEADER CHUNK OF SIZE", fp, "RESTARTING fp at position", fp
+	print_if_verbose( "READ HEADER CHUNK OF SIZE", fp, "RESTARTING fp at position", fp)
 	#read track chunks
 	for i in range(0, num_tracks):
 		'''READS EACH TRACK CHUNK'''
@@ -135,7 +144,7 @@ def get_info(file_name):
 		no_event_head = False
 		data = data[fp:]
 		fp = 0
-		#print "RESET TRACK", i+1, "fp TO 0 AT BEGINNING OF TRACK DATA"
+		print_if_verbose( "RESET TRACK", i+1, "fp TO 0 AT BEGINNING OF TRACK DATA")
 		def print_data(data):
 			'''pretty-prints the data bytes for all events in a track chunk
 			'data' is a string of hex values representing the data of the track chunk
@@ -147,7 +156,7 @@ def get_info(file_name):
 			for i in range(0, len(data)):
 				data_string += data[i]
 				if (i+1) % l == 0 or i == len(data)-1:
-					#print data_string
+					print_if_verbose( data_string)
 					if i < 1000:
 						for j in range(0,(l+3)/4):
 							space = len(str(x+j*4))
@@ -160,7 +169,7 @@ def get_info(file_name):
 							index_string += str(x+j*8)
 							for z in range(0, 8-space):
 								index_string += " "
-					#print index_string
+					print_if_verbose( index_string)
 					index_string = ""
 					x += l
 					data_string = ""
@@ -170,8 +179,8 @@ def get_info(file_name):
 		while remaining_track_len > 0:
 			global num_events
 			'''READS EACH EVENT'''
-			#print "-------------------"
-			#print "len(data):", len(data)
+			print_if_verbose( "-------------------")
+			print_if_verbose( "len(data):", len(data))
 			if len(data) - fp <= 6:
 				if data[-6:] != 'ff2f00':
 					raise error.MidiException("Track does not end with end_of_track meta event")
@@ -184,26 +193,26 @@ def get_info(file_name):
 			binary_value = ""
 			while int(data[fp + j:fp + j + 2], 16) >= 128:
 				binary_string = bin(int(data[fp + j: fp + j + 2], 16))[2:].zfill(8)
-				#print binary_string
+				print_if_verbose( binary_string)
 				binary_value += binary_string[1:8]
 				j += 2
 			binary_string = bin(int(data[fp + j: fp + j + 2], 16))[2:].zfill(8)
-			#print binary_string
+			print_if_verbose( binary_string)
 			binary_value += binary_string[1:8]
 			delta_time = int(binary_value, 2)
 			print_bytes(data[fp:fp+j+2], "Delta time:", delta_time)
 			total_delta_time += delta_time
-			#print "remaining_track_len:", remaining_track_len
+			print_if_verbose( "remaining_track_len:", remaining_track_len)
 			#TODO adjust time position
 			advance(j+2)
-			#print "fp after delta_time:", fp
+			print_if_verbose( "fp after delta_time:", fp)
 			#if int(first_byte, 16) < 128:
 				#raise error.MidiException("Unrecognized event at position", fp, ". Expected 0x80-0xFF, but got", data[fp:fp+2])
 			n1 = data[fp] #first nibble of this event's data
 			n2 = data[fp+1] #second nibble of this event's data
 			b2 = data[fp+2:fp+4] #second byte of this event's data
 			b3 = data[fp+4:fp+6] #third byte of this event's data
-			#print "This event type:", n1, n2, b2, b3
+			print_if_verbose( "This event type:", n1, n2, b2, b3)
 			temp_fp = fp
 
 			def read_variable_length():
@@ -211,14 +220,14 @@ def get_info(file_name):
 				binary_value = ""
 				while int(data[fp + i:fp + i + 2], 16) >= 128:
 					binary_string = bin(int(data[fp + i: fp + i + 2], 16))[2:].zfill(8)
-					#print binary_string
+					print_if_verbose( binary_string)
 					binary_value += binary_string[1:8]
 					i += 2
 				binary_string = bin(int(data[fp + i: fp + i + 2], 16))[2:].zfill(8)
 				binary_value += binary_string[1:8]
 				length = int(binary_value, 2)
 				advance(i+2)
-				#print "Variable length:", length
+				print_if_verbose( "Variable length:", length)
 				return length
 
 			def read_note_off(x):
@@ -238,11 +247,11 @@ def get_info(file_name):
 					print_bytes(data[fp-2:fp+4], "Note off c nn vv")
 				else:
 					print_bytes(data[fp:fp+4], "nn vv")
-				#print "Channel:", channel
+				print_if_verbose( "Channel:", channel)
 				#find note and 
 					#if in list: create note object
 					#else raise error: note ended that was not started
-				#print "Pop Note Command at fp:", fp
+				print_if_verbose( "Pop Note Command at fp:", fp)
 				advance(4)#pop note event is 3 bytes long
 
 			def read_note_on(x):
@@ -257,7 +266,7 @@ def get_info(file_name):
 					print_bytes(data[fp-2:fp+4], "Note off c nn vv")
 				else:
 					print_bytes(data[fp:fp+4], "nn vv")
-				#print "Channel:", channel
+				print_if_verbose( "Channel:", channel)
 				note_tuple = (key, channel, total_delta_time)
 				if velocity == 0:
 					#if in list: create note object
@@ -267,16 +276,16 @@ def get_info(file_name):
 						if nt[0] == key and nt[1] == channel:
 							duration = total_delta_time - nt[2]
 							note = Note.Note(total_delta_time, duration, key, channel)
-							#print "Note created:", note.to_string(ticks_per_quarter_note)
+							print_if_verbose( "Note created:", note.to_string(ticks_per_quarter_note))
 							notes[channel].append(note)
 							found = True
 							list_of_notes.remove(nt) #remove from list_of_notes
-					#if not found:
-						#print "Note created with velocity of 0 at position"
+					if not found:
+						print_if_verbose( "Note created with velocity of 0 at position")
 				else:
 					#add note to list
 					list_of_notes.append(note_tuple)
-				#print "Add/Pop Note Command at fp:", fp
+				print_if_verbose( "Add/Pop Note Command at fp:", fp)
 				advance(4)#add note event is 3 bytes long
 
 			def read_polyphonic():
@@ -284,14 +293,14 @@ def get_info(file_name):
 				#check/set key/velocity
 				#set channel
 				#send message
-				#print "Polyphonic Note at fp:", fp
+				print_if_verbose( "Polyphonic Note at fp:", fp)
 				advance(4)#polyphonic note event is 3 bytes long
 
 			def read_control_change():
 
 				#check control#, control_val
 				#send message
-				#print "Control Change at fp:", fp
+				print_if_verbose( "Control Change at fp:", fp)
 				print_bytes(data[fp:fp+4], "Control change")
 				advance(4)#control change event is 3 bytes long
 
@@ -299,7 +308,7 @@ def get_info(file_name):
 
 				#check new_program_#
 				#send message
-				#print "Program Change at fp:", fp
+				print_if_verbose( "Program Change at fp:", fp)
 				print_bytes(data[fp-2:fp+2], "Program change to", int(data[fp:fp+2], 16))
 				advance(2)#program change event is 2 bytes long
 
@@ -307,14 +316,14 @@ def get_info(file_name):
 
 				#check channel_pressure_val
 				#send message
-				#print "Channel Key Pressure of", data[fp:fp+2], "at fp:", fp
+				print_if_verbose( "Channel Key Pressure of", data[fp:fp+2], "at fp:", fp)
 				advance(2)#channel key pressure event is 2 bytes long
 
 			def read_pitch_bend():
 
 				#check msb, lsb
 				#send message
-				#print "Pitch Bend at fp:", fp
+				print_if_verbose( "Pitch Bend at fp:", fp)
 				advance(4)#pitch bend event is 3 bytes long
 
 
@@ -348,8 +357,8 @@ def get_info(file_name):
 			def read_cue():
 				raise error.MidiException("Cue meta event found at position", fp, "(Cue meta events not yet handled in program)")
 
-			def read_program_name():
-				#print "Program name meta event read at position", fp
+			def get_text():
+				print_if_verbose( "Program name meta event read at position", fp)
 				length = 2 * (int(data[fp:fp+2], 16))
 				program_name = data[fp:fp+length]
 				advance(length+2)
@@ -357,7 +366,7 @@ def get_info(file_name):
 				#raise error.MidiException("Program Name meta event found at position", fp, "(Program Name meta events not yet handled in program)")
 
 			def read_midi_channel_prefix():
-				if data[fp:fp+2] != '11':
+				if data[fp:fp+2] != '01':
 					raise error.MidiException("Invalid MIDI Channel Prefix meta event found at position", fp, "(expected '11' but got", data[fp:fp+2],")")
 				elif int(data[fp+2:fp+4], 16) > 15:
 					raise error.MidiException("Invalid MIDI Channel Prefix meta event found at position", fp+2, "(expected 00-0f but got", data[fp+2:fp+4],")")
@@ -376,7 +385,7 @@ def get_info(file_name):
 
 			def read_end_of_track():
 				if data[fp:fp+2] == '00':
-					#print "********************YAAAAAAY********************"
+					print_if_verbose( "********************YAAAAAAY********************")
 					advance(2)
 				else:
 					raise error.MidiException("Unrecognized End of Track meta event found at position", fp, "found", data[fp:fp+2], "but expected 0x00")
@@ -387,7 +396,7 @@ def get_info(file_name):
 				else:
 					mpq = int(data[fp+2:fp+8], 16)
 
-				#print "Tempo set to", mpq, "microseconds per quarter note", "(", 60000000/mpq, " beats per minute)"
+				print_if_verbose( "Tempo set to", mpq, "microseconds per quarter note", "(", 60000000/mpq, " beats per minute)")
 				advance(8)
 
 			def read_SMTPE_offset():
@@ -403,7 +412,7 @@ def get_info(file_name):
 					nonp = int(data[fp+8:fp+10], 16)
 					time_sig = str(numerator) + "/" + str(denominator)
 					song.set_time_sig(time_sig)
-					#print "Time signature:", numerator, "/", denominator
+					print_if_verbose( "Time signature:", numerator, "/", denominator)
 				advance(10)
 
 			def read_key_signature():
@@ -444,23 +453,23 @@ def get_info(file_name):
 									4  : "C sharp minor"}
 					if mode == "00":
 						song.set_key(majorkeys[numsharps])
-						#print "Key signature:", majorkeys[numsharps]
+						print_if_verbose( "Key signature:", majorkeys[numsharps])
 					else:
 						song.set_key(minorkeys[numsharps])
-						#print "Key signature:", minorkeys[numsharps]
+						print_if_verbose( "Key signature:", minorkeys[numsharps])
 				advance(6)
 
 			def read_sequence_specific():
 				raise error.MidiException("Sequencer-Specific meta event found at position", fp, "(Sequencer-Specific meta events not yet handled in program)")
 
 			def determine_event(x):
-				#print "x:", x
-				#if x == None:
-					#print "fp:", fp
+				print_if_verbose( "x:", x)
+				if x == None:
+					print_if_verbose( "fp:", fp)
 				global new_event_type, n1, n2, b2, b3
 				if x == None:
 					new_event_type = True
-				#print "new_event_type:", new_event_type
+				print_if_verbose( "new_event_type:", new_event_type)
 				'''HANDLE MIDI EVENTS'''
 				if n1 == '8':
 					#pop note command
@@ -554,7 +563,10 @@ def get_info(file_name):
 							#Sequence/Track Name
 							if x == None:
 								advance(4)
-							read_sequence_track_name()
+							#read_sequence_track_name()
+							seq_track_name = get_text().decode("hex")
+							print "Sequence/Track Name:", seq_track_name
+							print "fp is now:", fp
 						elif b2 == '04':
 							#Instrument Name
 							if x == None:
@@ -579,31 +591,31 @@ def get_info(file_name):
 							#Program Name
 							if x == None:
 								advance(4)
-							name_hex = read_program_name()
+							name_hex = get_text()
 							program_name = name_hex.decode("hex")
 							song.set_title(program_name)
-							#print "Program Name:", program_name
-							#print "fp is now:", fp
+							print_if_verbose( "Program Name:", program_name)
+							print_if_verbose( "fp is now:", fp)
 						elif b2 == '0a':
 							#Composer Name
 							#THIS IS NOT ON THE INTERNET FOR SOME REASON BUT IT'S A FREAKING THING AND I HAD TO FIGURE IT OUT FOR MYSELF
 							if x == None:
 								advance(4)
-							program_name = read_program_name().decode("hex")
-							#print "Composer Name:", program_name
-							#print "fp is now:", fp
+							program_name = get_text().decode("hex")
+							print_if_verbose( "Composer Name:", program_name)
+							print_if_verbose( "fp is now:", fp)
 						elif b2 == '20':
 							#MIDI Channel Prefix
 							if x == None:
 								advance(4)
 							set_channel(read_midi_channel_prefix())
-							#print "MIDI channel set to", channel
+							print_if_verbose( "MIDI channel set to", channel)
 						elif b2 == '21':
 							#MIDI Port
 							if x == None:
 								advance(4)
 							port = read_midi_port()
-							#print "MIDI port set to port", port
+							print_if_verbose( "MIDI port set to port", port)
 						elif b2 == '2f':
 							#End of Track
 							if x == None:
@@ -643,7 +655,7 @@ def get_info(file_name):
 							'''print "n1:", n1
 							print "n2:", n2
 							print "b2:", b2'''
-							#print "Using last header (", last_event_type, ") because none identified at", fp
+							print_if_verbose( "Using last header (", last_event_type, ") because none identified at", fp)
 							new_event_type = False
 							determine_event(last_event_type)
 					else:
@@ -655,7 +667,7 @@ def get_info(file_name):
 						'''print "n1:", n1
 						print "n2:", n2
 						print "b2:", b2'''
-						#print "Using last header (", last_event_type, ") because none identified at", fp
+						print_if_verbose( "Using last header (", last_event_type, ") because none identified at", fp)
 						new_event_type = False
 						determine_event(last_event_type)
 				else:
@@ -667,7 +679,7 @@ def get_info(file_name):
 					'''print "n1:", n1
 					print "n2:", n2
 					print "b2:", b2'''
-					#print "Using last header (", last_event_type, ") because none identified at", fp
+					print_if_verbose( "Using last header (", last_event_type, ") because none identified at", fp)
 					new_event_type = False
 					determine_event(last_event_type)
 			determine_event(None)
@@ -675,13 +687,13 @@ def get_info(file_name):
 			if new_event_type:
 				last_event_type = data[temp_fp:temp_fp+6]
 	song.num_events = num_events
-	#print file_name, "is a valid MIDI file."
+	print_if_verbose( file_name, "is a valid MIDI file.")
 	number_of_notes = 0
 	for c in notes:
 		for n in notes[c]:
 			number_of_notes += 1
-			#print n.to_string(ticks_per_quarter_note)
-	#print "Number of notes in file:", number_of_notes
+			print_if_verbose( n.to_string(ticks_per_quarter_note))
+	print_if_verbose( "Number of notes in file:", number_of_notes)
 	song.set_num_channels(len(channels))
 	return song
 

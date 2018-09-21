@@ -345,7 +345,7 @@ def main(file_name):
 			def read_cue():
 				raise error.MidiException("Cue meta event found at position", fp, "(Cue meta events not yet handled in program)")
 
-			def read_program_name():
+			def get_text():
 				print "Program name meta event read at position", fp
 				length = 2 * (int(data[fp:fp+2], 16))
 				program_name = data[fp:fp+length]
@@ -354,7 +354,8 @@ def main(file_name):
 				#raise error.MidiException("Program Name meta event found at position", fp, "(Program Name meta events not yet handled in program)")
 
 			def read_midi_channel_prefix():
-				if data[fp:fp+2] != '11':
+				print "fp: ", fp, "\n"
+				if data[fp:fp+2] != '01':
 					raise error.MidiException("Invalid MIDI Channel Prefix meta event found at position", fp, "(expected '11' but got", data[fp:fp+2],")")
 				elif int(data[fp+2:fp+4], 16) > 15:
 					raise error.MidiException("Invalid MIDI Channel Prefix meta event found at position", fp+2, "(expected 00-0f but got", data[fp+2:fp+4],")")
@@ -547,7 +548,10 @@ def main(file_name):
 							#Sequence/Track Name
 							if x == None:
 								advance(4)
-							read_sequence_track_name()
+							#read_sequence_track_name()
+							seq_track_name = get_text().decode("hex")
+							print "Sequence/Track Name:", seq_track_name
+							print "fp is now:", fp
 						elif b2 == '04':
 							#Instrument Name
 							if x == None:
@@ -572,7 +576,7 @@ def main(file_name):
 							#Program Name
 							if x == None:
 								advance(4)
-							name_hex = read_program_name()
+							name_hex = get_text()
 							program_name = name_hex.decode("hex")
 							print "Program Name:", program_name
 							#print "fp is now:", fp
@@ -581,13 +585,17 @@ def main(file_name):
 							#THIS IS NOT ON THE INTERNET FOR SOME REASON BUT IT'S A FREAKING THING AND I HAD TO FIGURE IT OUT FOR MYSELF
 							if x == None:
 								advance(4)
-							program_name = read_program_name().decode("hex")
+							program_name = get_text().decode("hex")
 							print "Composer Name:", program_name
 							#print "fp is now:", fp
 						elif b2 == '20':
 							#MIDI Channel Prefix
 							if x == None:
 								advance(4)
+							print "n1", n1
+							print "n2", n2
+							print "b2", b2
+							print "b3", b3
 							channel = read_midi_channel_prefix()
 							print "MIDI channel set to", channel
 						elif b2 == '21':
