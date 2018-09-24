@@ -17,8 +17,6 @@ fp = 0
 remaining_track_len = 0
 new_event_type = True
 num_events = 0
-list_of_notes = []
-i = 0
 #Music Tools
 
 #TODO note position and duration need to be rounded and even then they are not rounded to an accurate value
@@ -107,7 +105,7 @@ def get_info(file_name, verbose):
 	num_tracks = int(data[fp:fp+4], 16)
 	fp += 4
 	print_bytes(data[fp:fp+4], "Number of tracks: ", num_tracks)
-	song.num_tracks = num_tracks
+	song.set_num_tracks(num_tracks)
 	#get division data 
 	division = data[fp:fp+4]
 	print_bytes(data[fp:fp+4], "Division: ", division)
@@ -231,10 +229,8 @@ def get_info(file_name, verbose):
 				return length
 
 			def read_note_off(x):
-				i += 1
-				print_if_verbose("i = ", i)
 				print_if_verbose("Note off event")
-				global channel, list_of_notes,i
+				global channel
 				#check/set key/velocity
 				key = int(data[fp:fp+2], 16)
 				velocity = int(data[fp+2:fp+4], 16)
@@ -270,10 +266,8 @@ def get_info(file_name, verbose):
 				print_if_verbose("\tNotes that are on: ", list_of_notes)
 
 			def read_note_on(x):
-				i += 1
-				print_if_verbose("i = ", i)
 				print_if_verbose("Note on event")
-				global channel, list_of_notes,i
+				global channel
 				#check/set key/velocity
 				key = int(data[fp:fp+2], 16)
 				velocity = int(data[fp+2:fp+4], 16)
@@ -358,9 +352,6 @@ def get_info(file_name, verbose):
 			def read_sequence_number():
 				raise error.MidiException("Sequence Number meta event found at position", fp, "(Sequence Number meta events not yet handled in program)")
 
-			def read_text():
-				raise error.MidiException("Text meta event found at position", fp, "(Text meta events not yet handled in program)")
-
 			def read_copyright_notice():
 				raise error.MidiException("Copyright notice meta event found at position", fp, "(Copyright notice meta events not yet handled in program)")
 
@@ -390,7 +381,7 @@ def get_info(file_name, verbose):
 				elif int(data[fp+2:fp+4], 16) > 15:
 					raise error.MidiException("Invalid MIDI Channel Prefix meta event found at position", fp+2, "(expected 00-0f but got", data[fp+2:fp+4],")")
 				else:
-					set_channel(int(data[fp+2:fp+4]) + 1)
+					set_channel(int(data[fp+2:fp+4], 16) + 1)
 					advance(4)
 					return channel
 
@@ -569,9 +560,13 @@ def get_info(file_name, verbose):
 								advance(4)
 							read_sequence_number()
 						elif b2 == '01':
+							#Composer Name
+							#THIS IS NOT ON THE INTERNET FOR SOME REASON BUT IT'S A FREAKING THING AND I HAD TO FIGURE IT OUT FOR MYSELF
 							if x == None:
 								advance(4)
-							read_text()
+							program_name = get_text().decode("hex")
+							print_if_verbose( "Composer Name: ", program_name)
+							print_if_verbose( "fp is now: ", fp)
 						elif b2 == '02':
 							#Copyright notice
 							if x == None:
@@ -706,14 +701,19 @@ def get_info(file_name, verbose):
 			num_events += 1
 			if new_event_type:
 				last_event_type = data[temp_fp:temp_fp+6]
-	song.num_events = num_events
+	song.set_num_events(num_events)
 	print_if_verbose( file_name, "is a valid MIDI file.")
 	number_of_notes = 0
+	print_if_verbose("&&& Notes: ", notes)
+	note_list = []
 	for c in notes:
 		for n in notes[c]:
+			note_list.append(n)
 			number_of_notes += 1
 			print_if_verbose( n.to_string(ticks_per_quarter_note))
 	print_if_verbose( "Number of notes in file: ", number_of_notes)
+	song.set_ticks_per_quarter_note(ticks_per_quarter_note)
+	song.set_notes(note_list)
 	song.set_num_channels(len(channels))
 	return song
 

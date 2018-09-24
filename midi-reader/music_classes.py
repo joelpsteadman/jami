@@ -7,10 +7,11 @@ class Song:
 	num_events = "Not set"
 	key = "Not set"
 	time_sig = ""
+	ticks_per_quarter_note = ""
 	notes = []
 
 	def __init__(self):
-		self.num_tracks = 0
+		self.title = "Not set"
 
 	def __str__(self):
 		s = "title: "
@@ -25,6 +26,10 @@ class Song:
 		s += str(self.key)
 		s += "\ntime_sig: "
 		s += str(self.time_sig)
+		s += "\nnotes: "
+		for note in self.notes:
+			s += note.to_string(self.ticks_per_quarter_note)
+			s += "\n"
 		return s
 
 	def set_title(self, title):
@@ -45,8 +50,11 @@ class Song:
 	def set_time_sig(self, time):
 		self.time_sig = time
 
+	def set_ticks_per_quarter_note(self, val):
+		self.ticks_per_quarter_note = val
+
 	def set_notes(self, notes):
-		self.num_tracks = notes
+		self.notes = notes
 
 class Note:
 	pitch = 0
@@ -60,14 +68,13 @@ class Note:
 		self.duration = 0
 		self.channel = 0
 
-	def __init__(self, pitch, start, duration, channel):
+	def __init__(self, start, duration, pitch, channel):
 		self.pitch = pitch
 		self.start = start
 		self.duration = duration
 		self.channel = channel
 
 	def to_string(self, ticks_per_quarter_note = None):
-
 			notes = {	0 : 'C',
 						1 : 'C#',
 						2 : 'D',
