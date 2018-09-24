@@ -5,6 +5,8 @@ import error
 import warnings
 from music_classes import Song, Note
 
+#TODO put functions in another file all together
+
 #global variables
 n1 = ""
 n2 = ""
@@ -15,6 +17,8 @@ fp = 0
 remaining_track_len = 0
 new_event_type = True
 num_events = 0
+list_of_notes = []
+i = 0
 #Music Tools
 
 #TODO note position and duration need to be rounded and even then they are not rounded to an accurate value
@@ -92,26 +96,26 @@ def get_info(file_name, verbose):
 	fp = 8
 	#check header length
 	if re.match(r'00000006', data[fp:fp+8]) == None:
-		raise error.MidiException("Unrecognized header length: expected \"00000006\", but got:", data[fp:fp+8])
+		raise error.MidiException("Unrecognized header length: expected \"00000006\", but got: ", data[fp:fp+8])
 	fp += 8
 	#check format
 	midi_format = int(data[fp:fp+4], 16)
 	if midi_format > 2:
-		raise error.MidiException("Unrecognized format: expected 0,1, or 2, but got:", int(data[fp:fp+4], 16))
+		raise error.MidiException("Unrecognized format: expected 0,1, or 2, but got: ", int(data[fp:fp+4], 16))
 	fp += 4
 	#get number of tracks
 	num_tracks = int(data[fp:fp+4], 16)
 	fp += 4
-	print_bytes(data[fp:fp+4], "Number of tracks:", num_tracks)
+	print_bytes(data[fp:fp+4], "Number of tracks: ", num_tracks)
 	song.num_tracks = num_tracks
 	#get division data 
 	division = data[fp:fp+4]
-	print_bytes(data[fp:fp+4], "Division:", division)
+	print_bytes(data[fp:fp+4], "Division: ", division)
 	frmt = division[0:1]
-	print_bytes(division[0:1], "Format:", frmt)
+	print_bytes(division[0:1], "Format: ", frmt)
 	ticks_per_quarter_note = int(division[1:], 16)
 	if int(frmt, 16) < 8:
-		print_bytes(division[1:], "Ticks per quarter note:", ticks_per_quarter_note, 1)
+		print_bytes(division[1:], "Ticks per quarter note: ", ticks_per_quarter_note, 1)
 	#else:
 		print_if_verbose( "Negative two's compliment of", int(division[1:2], 16) - 128, "frames / second")
 		print_if_verbose( int(data[fp:fp+2],16), "ticks / frame")
@@ -131,11 +135,12 @@ def get_info(file_name, verbose):
 		fp = 8
 		#get track length
 		track_len = int(data[fp:fp+8], 16)
-		print_bytes(data[fp:fp+8], "Track length:", track_len)
+		print_bytes(data[fp:fp+8], "Track length: ", track_len)
 		track_len *= 2 #measure in nibbles, not bytes
 		remaining_track_len = track_len
 		fp += 8
 		list_of_notes = []
+		i = 0
 
 		'''READS EACH DELTA_TIME - EVENT PAIR IN THE TRACK'''
 
@@ -155,7 +160,7 @@ def get_info(file_name, verbose):
 			for i in range(0, len(data)):
 				data_string += data[i]
 				if (i+1) % l == 0 or i == len(data)-1:
-					print_if_verbose( data_string)
+					print_if_verbose( data_string)#prints hex content of the file
 					if i < 1000:
 						for j in range(0,(l+3)/4):
 							space = len(str(x+j*4))
@@ -168,7 +173,7 @@ def get_info(file_name, verbose):
 							index_string += str(x+j*8)
 							for z in range(0, 8-space):
 								index_string += " "
-					print_if_verbose( index_string)
+					print_if_verbose( index_string)#prints indexes to go along with the hex content of the file
 					index_string = ""
 					x += l
 					data_string = ""
@@ -179,7 +184,7 @@ def get_info(file_name, verbose):
 			global num_events
 			'''READS EACH EVENT'''
 			print_if_verbose( "-------------------")
-			print_if_verbose( "len(data):", len(data))
+			print_if_verbose("i = ",i)
 			if len(data) - fp <= 6:
 				if data[-6:] != 'ff2f00':
 					raise error.MidiException("Track does not end with end_of_track meta event")
@@ -192,26 +197,24 @@ def get_info(file_name, verbose):
 			binary_value = ""
 			while int(data[fp + j:fp + j + 2], 16) >= 128:
 				binary_string = bin(int(data[fp + j: fp + j + 2], 16))[2:].zfill(8)
-				print_if_verbose( binary_string)
 				binary_value += binary_string[1:8]
 				j += 2
 			binary_string = bin(int(data[fp + j: fp + j + 2], 16))[2:].zfill(8)
-			print_if_verbose( binary_string)
 			binary_value += binary_string[1:8]
 			delta_time = int(binary_value, 2)
-			print_bytes(data[fp:fp+j+2], "Delta time:", delta_time)
+			print_bytes(data[fp:fp+j+2], "Delta time: ", delta_time)
 			total_delta_time += delta_time
-			print_if_verbose( "remaining_track_len:", remaining_track_len)
+			print_if_verbose( "\t(Remaining_track_len: ", remaining_track_len, ")")
 			#TODO adjust time position
 			advance(j+2)
-			print_if_verbose( "fp after delta_time:", fp)
+			print_if_verbose( "\t(fp after delta_time: ", fp, ")")
 			#if int(first_byte, 16) < 128:
 				#raise error.MidiException("Unrecognized event at position", fp, ". Expected 0x80-0xFF, but got", data[fp:fp+2])
 			n1 = data[fp] #first nibble of this event's data
 			n2 = data[fp+1] #second nibble of this event's data
 			b2 = data[fp+2:fp+4] #second byte of this event's data
 			b3 = data[fp+4:fp+6] #third byte of this event's data
-			print_if_verbose( "This event type:", n1, n2, b2, b3)
+			print_if_verbose( "\t(This event type: ", n1, n2, b2, b3, ")")
 			temp_fp = fp
 
 			def read_variable_length():
@@ -219,92 +222,111 @@ def get_info(file_name, verbose):
 				binary_value = ""
 				while int(data[fp + i:fp + i + 2], 16) >= 128:
 					binary_string = bin(int(data[fp + i: fp + i + 2], 16))[2:].zfill(8)
-					print_if_verbose( binary_string)
 					binary_value += binary_string[1:8]
 					i += 2
 				binary_string = bin(int(data[fp + i: fp + i + 2], 16))[2:].zfill(8)
 				binary_value += binary_string[1:8]
 				length = int(binary_value, 2)
 				advance(i+2)
-				print_if_verbose( "Variable length:", length)
 				return length
 
 			def read_note_off(x):
-				global channel
+				i += 1
+				print_if_verbose("i = ", i)
+				print_if_verbose("Note off event")
+				global channel, list_of_notes,i
 				#check/set key/velocity
 				key = int(data[fp:fp+2], 16)
 				velocity = int(data[fp+2:fp+4], 16)
+				print_if_verbose("\tTurning off ", key)
 				#set channel
 				if x == None:
 					set_channel(int(data[fp-1], 16) + 1)
+					print_if_verbose("Event header:")
 					print_bytes(data[fp-2:fp+4], "Note off c nn vv")
 				else:
+					print_if_verbose("Event header:")
 					print_bytes(data[fp:fp+4], "nn vv")
-				print_if_verbose( "Channel:", channel)
+				print_if_verbose( "\tChannel: ", channel)
 				#if in list: create note object
+				found = False
+				print_if_verbose("\tNotes that are on: ", list_of_notes)
 				for nt in list_of_notes: 
 					#create note object
-					found = False
-					if nt[0] == key and nt[1] == channel:
+					print_if_verbose(nt[0], "=?", key, " ", nt[1], "=?", channel)
+					if nt[0] == key and nt[1] == channel and not found:
 						duration = total_delta_time - nt[2]
 						note = Note(total_delta_time, duration, key, channel)
-						print_if_verbose( "Note created:", note.to_string(ticks_per_quarter_note))
+						print_if_verbose( "Note created: ", note.to_string(ticks_per_quarter_note))
 						notes[channel].append(note)
 						found = True
 						list_of_notes.remove(nt) #remove from list_of_notes
+						print_if_verbose("\tNotes that are on: ", list_of_notes)
+					print_if_verbose("found: ", found)
 				if not found:
-					raise error.MidiException("Invalid note off event at position", fp, ". No such note is currently on")
-				print_if_verbose( "Add/Pop Note Command at fp:", fp)
+					raise error.MidiException("Invalid note off event at position", fp, ". No such note of pitch", key, "is currently on")
+				print_if_verbose( "Add/Pop Note Command at fp: ", fp)
 				advance(4)#add note event is 3 bytes long
+				print_if_verbose("\tNotes that are on: ", list_of_notes)
 
 			def read_note_on(x):
-
-				global channel
+				i += 1
+				print_if_verbose("i = ", i)
+				print_if_verbose("Note on event")
+				global channel, list_of_notes,i
 				#check/set key/velocity
 				key = int(data[fp:fp+2], 16)
 				velocity = int(data[fp+2:fp+4], 16)
 				#set channel
 				if x == None:
 					set_channel(int(data[fp-1], 16) + 1)
+					print_if_verbose("Event header:")
 					print_bytes(data[fp-2:fp+4], "Note on c nn vv")
 				else:
+					print_if_verbose("Event header:")
 					print_bytes(data[fp:fp+4], "nn vv")
-				print_if_verbose( "Channel:", channel)
+				print_if_verbose( "\tChannel: ", channel)
 				note_tuple = (key, channel, total_delta_time)
+				found = False
 				if velocity == 0:
 					#if in list: create note object
 					for nt in list_of_notes: 
 						#create note object
-						found = False
-						if nt[0] == key and nt[1] == channel:
+						if nt[0] == key and nt[1] == channel and not found:
 							duration = total_delta_time - nt[2]
 							note = Note(total_delta_time, duration, key, channel)
-							print_if_verbose( "Note created:", note.to_string(ticks_per_quarter_note))
+							print_if_verbose( "Note created: ", note.to_string(ticks_per_quarter_note))
 							notes[channel].append(note)
 							found = True
+							print_if_verbose("\tTurning off ", key)
 							list_of_notes.remove(nt) #remove from list_of_notes
+							print_if_verbose("\tNotes that are on: ", list_of_notes)
+					print_if_verbose("found: ", found)
 					if not found:
 						print_if_verbose( "Note created with velocity of 0 at position")
 				else:
 					#add note to list
+					print_if_verbose("\tTurning on ", key)
 					print_if_verbose("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 					list_of_notes.append(note_tuple)
-				print_if_verbose( "Add/Pop Note Command at fp:", fp)
+					print_if_verbose("\tNotes that are on: ", list_of_notes)
+				print_if_verbose( "Add/Pop Note Command at fp: ", fp)
 				advance(4)#add note event is 3 bytes long
+				print_if_verbose("\tNotes that are on: ", list_of_notes)
 
 			def read_polyphonic():
 
 				#check/set key/velocity
 				#set channel
 				#send message
-				print_if_verbose( "Polyphonic Note at fp:", fp)
+				print_if_verbose( "Polyphonic Note at fp: ", fp)
 				advance(4)#polyphonic note event is 3 bytes long
 
 			def read_control_change():
 
 				#check control#, control_val
 				#send message
-				print_if_verbose( "Control Change at fp:", fp)
+				print_if_verbose( "Control Change at fp: ", fp)
 				print_bytes(data[fp:fp+4], "Control change")
 				advance(4)#control change event is 3 bytes long
 
@@ -312,7 +334,7 @@ def get_info(file_name, verbose):
 
 				#check new_program_#
 				#send message
-				print_if_verbose( "Program Change at fp:", fp)
+				print_if_verbose( "Program Change at fp: ", fp)
 				print_bytes(data[fp-2:fp+2], "Program change to", int(data[fp:fp+2], 16))
 				advance(2)#program change event is 2 bytes long
 
@@ -320,14 +342,14 @@ def get_info(file_name, verbose):
 
 				#check channel_pressure_val
 				#send message
-				print_if_verbose( "Channel Key Pressure of", data[fp:fp+2], "at fp:", fp)
+				print_if_verbose( "Channel Key Pressure of", data[fp:fp+2], "at fp: ", fp)
 				advance(2)#channel key pressure event is 2 bytes long
 
 			def read_pitch_bend():
 
 				#check msb, lsb
 				#send message
-				print_if_verbose( "Pitch Bend at fp:", fp)
+				print_if_verbose( "Pitch Bend at fp: ", fp)
 				advance(4)#pitch bend event is 3 bytes long
 
 			def read_sysex():
@@ -409,7 +431,7 @@ def get_info(file_name, verbose):
 					nonp = int(data[fp+8:fp+10], 16)
 					time_sig = str(numerator) + "/" + str(denominator)
 					song.set_time_sig(time_sig)
-					print_if_verbose( "Time signature:", numerator, "/", denominator)
+					print_if_verbose( "Time signature: ", numerator, "/", denominator)
 				advance(10)
 
 			def read_key_signature():
@@ -450,23 +472,22 @@ def get_info(file_name, verbose):
 									4  : "C sharp minor"}
 					if mode == "00":
 						song.set_key(majorkeys[numsharps])
-						print_if_verbose( "Key signature:", majorkeys[numsharps])
+						print_if_verbose( "Key signature: ", majorkeys[numsharps])
 					else:
 						song.set_key(minorkeys[numsharps])
-						print_if_verbose( "Key signature:", minorkeys[numsharps])
+						print_if_verbose( "Key signature: ", minorkeys[numsharps])
 				advance(6)
 
 			def read_sequence_specific():
 				raise error.MidiException("Sequencer-Specific meta event found at position", fp, "(Sequencer-Specific meta events not yet handled in program)")
 
 			def determine_event(x):
-				print_if_verbose( "x:", x)
+				print_if_verbose( "\tEvent type: ", x)
 				if x == None:
-					print_if_verbose( "fp:", fp)
+					print_if_verbose( "\t(fp: ", fp, ")")
 				global new_event_type, n1, n2, b2, b3
 				if x == None:
 					new_event_type = True
-				print_if_verbose( "new_event_type:", new_event_type)
 				'''HANDLE MIDI EVENTS'''
 				if n1 == '8':
 					#pop note command
@@ -562,15 +583,15 @@ def get_info(file_name, verbose):
 								advance(4)
 							#read_sequence_track_name()
 							seq_track_name = get_text().decode("hex")
-							print_if_verbose( "Sequence/Track Name:", seq_track_name)
-							print_if_verbose( "fp is now:", fp)
+							print_if_verbose( "Sequence/Track Name: ", seq_track_name)
+							print_if_verbose( "fp is now: ", fp)
 						elif b2 == '04':
 							#Instrument Name
 							if x == None:
 								advance(4)
 							instrument_name = get_text().decode("hex")
-							print_if_verbose( "Instrument Name:", instrument_name)
-							print_if_verbose( "fp is now:", fp)
+							print_if_verbose( "Instrument Name: ", instrument_name)
+							print_if_verbose( "fp is now: ", fp)
 						elif b2 == '05':
 							#Lyric
 							if x == None:
@@ -593,16 +614,16 @@ def get_info(file_name, verbose):
 							name_hex = get_text()
 							program_name = name_hex.decode("hex")
 							song.set_title(program_name)
-							print_if_verbose( "Program Name:", program_name)
-							print_if_verbose( "fp is now:", fp)
+							print_if_verbose( "Program Name: ", program_name)
+							print_if_verbose( "fp is now: ", fp)
 						elif b2 == '0a':
 							#Composer Name
 							#THIS IS NOT ON THE INTERNET FOR SOME REASON BUT IT'S A FREAKING THING AND I HAD TO FIGURE IT OUT FOR MYSELF
 							if x == None:
 								advance(4)
 							program_name = get_text().decode("hex")
-							print_if_verbose( "Composer Name:", program_name)
-							print_if_verbose( "fp is now:", fp)
+							print_if_verbose( "Composer Name: ", program_name)
+							print_if_verbose( "fp is now: ", fp)
 						elif b2 == '20':
 							#MIDI Channel Prefix
 							if x == None:
@@ -651,10 +672,10 @@ def get_info(file_name, verbose):
 							n1 = last_event_type[:1]
 							n2 = last_event_type[1:2]
 							b2 = last_event_type[2:4]
-							'''print "n1:", n1
-							print "n2:", n2
-							print "b2:", b2'''
-							print_if_verbose( "Using last header (", last_event_type, ") because none identified at", fp)
+							'''print "n1: ", n1
+							print "n2: ", n2
+							print "b2: ", b2'''
+							print_if_verbose( "\t(Using last header (", last_event_type, ") because none identified at ", fp, ")")
 							new_event_type = False
 							determine_event(last_event_type)
 					else:
@@ -663,10 +684,10 @@ def get_info(file_name, verbose):
 						n1 = last_event_type[:1]
 						n2 = last_event_type[1:2]
 						b2 = last_event_type[2:4]
-						'''print "n1:", n1
-						print "n2:", n2
-						print "b2:", b2'''
-						print_if_verbose( "Using last header (", last_event_type, ") because none identified at", fp)
+						'''print "n1: ", n1
+						print "n2: ", n2
+						print "b2: ", b2'''
+						print_if_verbose( "\tUsing last header (", last_event_type, ") because none identified at ", fp, ")")
 						new_event_type = False
 						determine_event(last_event_type)
 				else:
@@ -675,10 +696,10 @@ def get_info(file_name, verbose):
 					n1 = last_event_type[:1]
 					n2 = last_event_type[1:2]
 					b2 = last_event_type[2:4]
-					'''print "n1:", n1
-					print "n2:", n2
-					print "b2:", b2'''
-					print_if_verbose( "Using last header (", last_event_type, ") because none identified at", fp)
+					'''print "n1: ", n1
+					print "n2: ", n2
+					print "b2: ", b2'''
+					print_if_verbose( "\tUsing last header (", last_event_type, ") because none identified at ", fp, ")")
 					new_event_type = False
 					determine_event(last_event_type)
 			determine_event(None)
