@@ -1,4 +1,5 @@
 #Music Classes
+import math
 
 class Song:
 	title = "Not set"
@@ -27,9 +28,10 @@ class Song:
 		s += "\ntime_sig: "
 		s += str(self.time_sig)
 		s += "\nnotes: "
-		for note in self.notes:
-			s += note.to_string(self.ticks_per_quarter_note)
-			s += "\n"
+		for channel in self.notes:
+			for note in self.notes[channel]:
+				s += note.to_string(self.ticks_per_quarter_note)
+				s += "\n"
 		return s
 
 	def set_title(self, title):
@@ -56,6 +58,9 @@ class Song:
 	def set_notes(self, notes):
 		self.notes = notes
 
+	def add_to_db(self):
+		return None
+
 class Note:
 	pitch = 0
 	start = 0.0
@@ -74,7 +79,24 @@ class Note:
 		self.duration = duration
 		self.channel = channel
 
+	#TODO instead of converting ticks to rhythm here, do it in the midi_reader file
 	def to_string(self, ticks_per_quarter_note = None):
+			def round_rhythm(time):
+				frac, whole = math.modf(time)
+				if frac > .9 or frac < .1:
+					frac = 0.0
+				elif frac > .2 and frac < .28:
+					frac = 0.25
+				elif frac > .29 and frac < .4:
+					frac = 1/3
+				elif frac > .45 and frac < .55:
+					frac = 0.5
+				elif frac > .56 and frac < .7:
+					frac = 2/3
+				elif frac > .7 and frac < .8:
+					frac = 0.75
+				print "\nRounded rythm: ", whole+frac
+				return whole+frac
 			notes = {	0 : 'C',
 						1 : 'C#',
 						2 : 'D',
@@ -91,11 +113,11 @@ class Note:
 			string = ""
 			note = str(notes[self.pitch % 12]) + str(self.pitch / 12 + 1)
 			if ticks_per_quarter_note == None:
-				string = "Channel:"
+				string = "Channel: "
 				string += self.channel, "Pitch:", self.pitch, "start:", self.start*960, "seconds", "Duration:", self.duration*960, "seconds"
 			else:
 				string = "Channel: "
-				string += str(self.channel) + ", Pitch: " + note + ", start: " + str(round(self.start / float(ticks_per_quarter_note), 1)) + " quarter notes, Duration: " + str(round(self.duration / float(ticks_per_quarter_note), 1)) + " quarter notes"
+				string += str(self.channel) + ", Pitch: " + note + ", start: " + str(round_rhythm(self.start / float(ticks_per_quarter_note))) + " quarter notes, Duration: " + str(round_rhythm(self.duration / float(ticks_per_quarter_note))) + " quarter notes"
 			return string
 			
 	def overlap(self, note):

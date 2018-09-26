@@ -215,6 +215,7 @@ def get_info(file_name, verbose):
 			print_if_verbose( "\t(This event type: ", n1, n2, b2, b3, ")")
 			temp_fp = fp
 
+			#TODO this isn't used??? how is it not used at all?
 			def read_variable_length():
 				i = 0
 				binary_value = ""
@@ -329,7 +330,7 @@ def get_info(file_name, verbose):
 				#check new_program_#
 				#send message
 				print_if_verbose( "Program Change at fp: ", fp)
-				print_bytes(data[fp-2:fp+2], "Program change to", int(data[fp:fp+2], 16))
+				print_bytes(data[fp-2:fp+2], "Program change to ", int(data[fp:fp+2], 16))
 				advance(2)#program change event is 2 bytes long
 
 			def read_channel_key_pressure():
@@ -406,15 +407,15 @@ def get_info(file_name, verbose):
 				else:
 					mpq = int(data[fp+2:fp+8], 16)
 
-				print_if_verbose( "Tempo set to", mpq, "microseconds per quarter note", "(", 60000000/mpq, " beats per minute)")
+				print_if_verbose( "Tempo set to ", mpq, "microseconds per quarter note", "(", 60000000/mpq, " beats per minute)")
 				advance(8)
 
 			def read_SMTPE_offset():
-				raise error.MidiException("SMTPE Offset meta event found at position", fp, "(SMTPE Offset meta events not yet handled in program)")
+				raise error.MidiException("SMTPE Offset meta event found at position ", fp, "(SMTPE Offset meta events not yet handled in program)")
 
 			def read_time_signature():
 				if data[fp:fp+2] != "04":
-					raise error.MidiException("Unrecognized Time Signature meta event at position", fp, "found", data[fp+4:fp+6], "but expected 0x04")
+					raise error.MidiException("Unrecognized Time Signature meta event at position ", fp, "found ", data[fp+4:fp+6], "but expected 0x04")
 				else:
 					numerator = int(data[fp+2:fp+4], 16)
 					denominator = 2 ** int(data[fp+4:fp+6], 16)
@@ -713,7 +714,7 @@ def get_info(file_name, verbose):
 			print_if_verbose( n.to_string(ticks_per_quarter_note))
 	print_if_verbose( "Number of notes in file: ", number_of_notes)
 	song.set_ticks_per_quarter_note(ticks_per_quarter_note)
-	song.set_notes(note_list)
+	song.set_notes(notes)
 	song.set_num_channels(len(channels))
 	return song
 
