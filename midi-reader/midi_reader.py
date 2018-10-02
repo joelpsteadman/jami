@@ -3,7 +3,7 @@ import binascii
 import re
 import error
 import warnings
-from music_classes import Song, Note
+from music_classes import Song
 
 #TODO put functions in another file all together
 
@@ -66,7 +66,7 @@ def get_info(file_name, verbose):
 		fp += nibbles
 		remaining_track_len -= nibbles
 
-	def print_bytes(data, explanation = "", value = "", offset = 0):
+	def print_bytes(data, explanation = " ", value = " ", offset = 0):
 		'''pretty-prints a small chunk of byte(s) and an explanation of what they mean in the MIDI file
 		'data' is a string of hex values representing the bytes to be explained
 		'explanation' is an optional string describing what the data means
@@ -115,11 +115,13 @@ def get_info(file_name, verbose):
 	if int(frmt, 16) < 8:
 		print_bytes(division[1:], "Ticks per quarter note: ", ticks_per_quarter_note, 1)
 	#else:
-		print_if_verbose( "Negative two's compliment of", int(division[1:2], 16) - 128, "frames / second")
+		print_if_verbose( "Negative two's compliment of ", int(division[1:2], 16) - 128, "frames / second")
 		print_if_verbose( int(data[fp:fp+2],16), "ticks / frame")
+		song.timed = True
 	fp += 4
+	song.set_ticks_per_quarter_note(ticks_per_quarter_note)
 		
-	print_if_verbose( "READ HEADER CHUNK OF SIZE", fp, "RESTARTING fp at position", fp)
+	print_if_verbose( "READ HEADER CHUNK OF SIZE ", fp, "RESTARTING fp at position ", fp)
 	#read track chunks
 	for i in range(0, num_tracks):
 		'''READS EACH TRACK CHUNK'''
@@ -129,7 +131,7 @@ def get_info(file_name, verbose):
 		#check track chunk type
 		print_bytes(data[0:8], "\"MTrk\"")
 		if re.match(r'4d54726b', data) == None:
-			raise error.MidiException("Track does not begin with \"MTrk\"", "at position", fp)
+			raise error.MidiException("Track does not begin with \"MTrk\" ", "at position ", fp)
 		fp = 8
 		#get track length
 		track_len = int(data[fp:fp+8], 16)
@@ -146,7 +148,7 @@ def get_info(file_name, verbose):
 		no_event_head = False
 		data = data[fp:]
 		fp = 0
-		print_if_verbose( "RESET TRACK", i+1, "fp TO 0 AT BEGINNING OF TRACK DATA")
+		print_if_verbose( "RESET TRACK ", i+1, "fp TO 0 AT BEGINNING OF TRACK DATA")
 		def print_data(data):
 			'''pretty-prints the data bytes for all events in a track chunk
 			'data' is a string of hex values representing the data of the track chunk
@@ -202,12 +204,13 @@ def get_info(file_name, verbose):
 			delta_time = int(binary_value, 2)
 			print_bytes(data[fp:fp+j+2], "Delta time: ", delta_time)
 			total_delta_time += delta_time
+			print_if_verbose("Total delta time: ", total_delta_time)
 			print_if_verbose( "\t(Remaining_track_len: ", remaining_track_len, ")")
 			#TODO adjust time position
 			advance(j+2)
 			print_if_verbose( "\t(fp after delta_time: ", fp, ")")
 			#if int(first_byte, 16) < 128:
-				#raise error.MidiException("Unrecognized event at position", fp, ". Expected 0x80-0xFF, but got", data[fp:fp+2])
+				#raise error.MidiException("Unrecognized event at position ", fp, ". Expected 0x80-0xFF, but got ", data[fp:fp+2])
 			n1 = data[fp] #first nibble of this event's data
 			n2 = data[fp+1] #second nibble of this event's data
 			b2 = data[fp+2:fp+4] #second byte of this event's data
@@ -219,7 +222,7 @@ def get_info(file_name, verbose):
 			def read_variable_length():
 				i = 0
 				binary_value = ""
-				while int(data[fp + i:fp + i + 2], 16) >= 128:
+				while int(data[fp + i:fp + i + 2], 16) >= 128:#reads one byte at a time; if first bit is 1, it continues
 					binary_string = bin(int(data[fp + i: fp + i + 2], 16))[2:].zfill(8)
 					binary_value += binary_string[1:8]
 					i += 2
@@ -250,10 +253,11 @@ def get_info(file_name, verbose):
 				print_if_verbose("\tNotes that are on: ", list_of_notes)
 				for nt in list_of_notes: 
 					#create note object
-					print_if_verbose(nt[0], "=?", key, " ", nt[1], "=?", channel)
+					print_if_verbose(nt[0], "=? ", key, " ", nt[1], "=? ", channel)
 					if nt[0] == key and nt[1] == channel and not found:
 						duration = total_delta_time - nt[2]
-						note = Note(total_delta_time, duration, key, channel)
+						start = total_delta_time - duration
+						note = song.add_note(total_delta_time, duration, key, channel)
 						print_if_verbose( "Note created: ", note.to_string(ticks_per_quarter_note))
 						notes[channel].append(note)
 						found = True
@@ -261,7 +265,7 @@ def get_info(file_name, verbose):
 						print_if_verbose("\tNotes that are on: ", list_of_notes)
 					print_if_verbose("found: ", found)
 				if not found:
-					raise error.MidiException("Invalid note off event at position", fp, ". No such note of pitch", key, "is currently on")
+					raise error.MidiException("Invalid note off event at position ", fp, ". No such note of pitch ", key, "is currently on")
 				print_if_verbose( "Add/Pop Note Command at fp: ", fp)
 				advance(4)#add note event is 3 bytes long
 				print_if_verbose("\tNotes that are on: ", list_of_notes)
@@ -289,7 +293,7 @@ def get_info(file_name, verbose):
 						#create note object
 						if nt[0] == key and nt[1] == channel and not found:
 							duration = total_delta_time - nt[2]
-							note = Note(total_delta_time, duration, key, channel)
+							note = song.add_note(total_delta_time, duration, key, channel)
 							print_if_verbose( "Note created: ", note.to_string(ticks_per_quarter_note))
 							notes[channel].append(note)
 							found = True
@@ -337,7 +341,7 @@ def get_info(file_name, verbose):
 
 				#check channel_pressure_val
 				#send message
-				print_if_verbose( "Channel Key Pressure of", data[fp:fp+2], "at fp: ", fp)
+				print_if_verbose( "Channel Key Pressure of ", data[fp:fp+2], "at fp: ", fp)
 				advance(2)#channel key pressure event is 2 bytes long
 
 			def read_pitch_bend():
@@ -348,39 +352,41 @@ def get_info(file_name, verbose):
 				advance(4)#pitch bend event is 3 bytes long
 
 			def read_sysex():
-				raise error.MidiException("Sysex event found at position", fp, "(sysex events not yet handled in program)")
+				raise error.MidiException("Sysex event found at position ", fp, "(sysex events not yet handled in program)")
 
 			def read_sequence_number():
-				raise error.MidiException("Sequence Number meta event found at position", fp, "(Sequence Number meta events not yet handled in program)")
+				raise error.MidiException("Sequence Number meta event found at position ", fp, "(Sequence Number meta events not yet handled in program)")
 
 			def read_copyright_notice():
-				raise error.MidiException("Copyright notice meta event found at position", fp, "(Copyright notice meta events not yet handled in program)")
+				raise error.MidiException("Copyright notice meta event found at position ", fp, "(Copyright notice meta events not yet handled in program)")
 
 			def read_sequence_track_name():
-				raise error.MidiException("Sequence/Track Name meta event found at position", fp, "(Sequence/Track Name meta events not yet handled in program)")
+				raise error.MidiException("Sequence/Track Name meta event found at position ", fp, "(Sequence/Track Name meta events not yet handled in program)")
 
 			def read_lyric():
-				raise error.MidiException("Lyric meta event found at position", fp, "(Lyric meta events not yet handled in program)")
+				raise error.MidiException("Lyric meta event found at position ", fp, "(Lyric meta events not yet handled in program)")
 
 			def read_marker():
-				raise error.MidiException("Marker meta event found at position", fp, "(Marker meta events not yet handled in program)")
+				raise error.MidiException("Marker meta event found at position ", fp, "(Marker meta events not yet handled in program)")
 
 			def read_cue():
-				raise error.MidiException("Cue meta event found at position", fp, "(Cue meta events not yet handled in program)")
+				raise error.MidiException("Cue meta event found at position ", fp, "(Cue meta events not yet handled in program)")
 
-			def get_text():
-				print_if_verbose( "Program name meta event read at position", fp)
-				length = 2 * (int(data[fp:fp+2], 16))
-				program_name = data[fp:fp+length]
-				advance(length+2)
-				return program_name
-				#raise error.MidiException("Program Name meta event found at position", fp, "(Program Name meta events not yet handled in program)")
+			def get_text(nibbles = 2):
+				length = read_variable_length()
+				number_of_data_nibbles = length * 2
+				# length = 2 * (int(data[fp:fp+2], 16))
+				text = data[fp:fp + number_of_data_nibbles]
+				advance(number_of_data_nibbles)
+				# advance(length+nibbles)
+				return text
+				#raise error.MidiException("Program Name meta event found at position ", fp, "(Program Name meta events not yet handled in program)")
 
 			def read_midi_channel_prefix():
 				if data[fp:fp+2] != '01':
-					raise error.MidiException("Invalid MIDI Channel Prefix meta event found at position", fp, "(expected '11' but got", data[fp:fp+2],")")
+					raise error.MidiException("Invalid MIDI Channel Prefix meta event found at position ", fp, "(expected '11' but got ", data[fp:fp+2],")")
 				elif int(data[fp+2:fp+4], 16) > 15:
-					raise error.MidiException("Invalid MIDI Channel Prefix meta event found at position", fp+2, "(expected 00-0f but got", data[fp+2:fp+4],")")
+					raise error.MidiException("Invalid MIDI Channel Prefix meta event found at position ", fp+2, "(expected 00-0f but got ", data[fp+2:fp+4],")")
 				else:
 					set_channel(int(data[fp+2:fp+4], 16) + 1)
 					advance(4)
@@ -388,7 +394,7 @@ def get_info(file_name, verbose):
 
 			def read_midi_port():
 				if data[fp:fp+2] != '01':
-					raise error.MidiException("Invalid MIDI Port meta event found at position", fp, "(expected '01' but got", data[fp:fp+2],")")
+					raise error.MidiException("Invalid MIDI Port meta event found at position ", fp, "(expected '01' but got ", data[fp:fp+2],")")
 				else:
 					port = int(data[fp+2:fp+4], 16) + 1
 					advance(4)
@@ -399,15 +405,15 @@ def get_info(file_name, verbose):
 					print_if_verbose( "********************YAAAAAAY********************")
 					advance(2)
 				else:
-					raise error.MidiException("Unrecognized End of Track meta event found at position", fp, "found", data[fp:fp+2], "but expected 0x00")
+					raise error.MidiException("Unrecognized End of Track meta event found at position ", fp, "found ", data[fp:fp+2], "but expected 0x00")
 
 			def read_tempo():
 				if data[fp:fp+2] != "03":
-					raise error.MidiException("Unrecognized Set Tempo meta event at position", fp, "found", data[fp:fp+2], "but expected 0x03")
+					raise error.MidiException("Unrecognized Set Tempo meta event at position ", fp, "found ", data[fp:fp+2], "but expected 0x03")
 				else:
 					mpq = int(data[fp+2:fp+8], 16)
 
-				print_if_verbose( "Tempo set to ", mpq, "microseconds per quarter note", "(", 60000000/mpq, " beats per minute)")
+				print_if_verbose( "Tempo set to ", mpq, "microseconds per quarter note ", "( ", 60000000/mpq, " beats per minute)")
 				advance(8)
 
 			def read_SMTPE_offset():
@@ -423,44 +429,44 @@ def get_info(file_name, verbose):
 					nonp = int(data[fp+8:fp+10], 16)
 					time_sig = str(numerator) + "/" + str(denominator)
 					song.set_time_sig(time_sig)
-					print_if_verbose( "Time signature: ", numerator, "/", denominator)
+					print_if_verbose( "Time signature: ", numerator, "/ ", denominator)
 				advance(10)
 
 			def read_key_signature():
 				if data[fp:fp+2] != "02":
-					raise error.MidiException("Unrecognized Key Signature meta event at position", fp, "found", data[fp+4:fp+6], "but expected 0x02")
+					raise error.MidiException("Unrecognized Key Signature meta event at position ", fp, "found ", data[fp+4:fp+6], "but expected 0x02")
 				else:
 					numsharps = int(data[fp+2:fp+4], 16)
 					mode = data[fp+4:fp+6]
-					majorkeys = {	249 : "C flat major",
-									250 : "G flat major",
-									251 : "D flat major",
-									252 : "A flat major",
-									253 : "E flat major",
-									254 : "B flat major",
-									255 : "F major",
-									0  : "C major",
-									1  : "G major",
-									2  : "D major",
-									3  : "A major",
-									4  : "E major",
-									5  : "B major",
-									6  : "F sharp major",
+					majorkeys = {	249 : "C flat major ",
+									250 : "G flat major ",
+									251 : "D flat major ",
+									252 : "A flat major ",
+									253 : "E flat major ",
+									254 : "B flat major ",
+									255 : "F major ",
+									0  : "C major ",
+									1  : "G major ",
+									2  : "D major ",
+									3  : "A major ",
+									4  : "E major ",
+									5  : "B major ",
+									6  : "F sharp major ",
 									7  : "C sharp major"}
-					minorkeys = {	5  : "C flat minor",
-									6  : "G flat minor",
-									7  : "D flat minor",
-									249 : "A flat minor",
-									250 : "E flat minor",
-									251 : "B flat minor",
-									252 : "F minor",
-									253 : "C minor",
-									254 : "G minor",
-									255 : "D minor",
-									0  : "A minor",
-									1  : "E minor",
-									2  : "B minor",
-									3  : "F sharp minor",
+					minorkeys = {	5  : "C flat minor ",
+									6  : "G flat minor ",
+									7  : "D flat minor ",
+									249 : "A flat minor ",
+									250 : "E flat minor ",
+									251 : "B flat minor ",
+									252 : "F minor ",
+									253 : "C minor ",
+									254 : "G minor ",
+									255 : "D minor ",
+									0  : "A minor ",
+									1  : "E minor ",
+									2  : "B minor ",
+									3  : "F sharp minor ",
 									4  : "C sharp minor"}
 					if mode == "00":
 						song.set_key(majorkeys[numsharps])
@@ -469,9 +475,6 @@ def get_info(file_name, verbose):
 						song.set_key(minorkeys[numsharps])
 						print_if_verbose( "Key signature: ", minorkeys[numsharps])
 				advance(6)
-
-			def read_sequence_specific():
-				raise error.MidiException("Sequencer-Specific meta event found at position", fp, "(Sequencer-Specific meta events not yet handled in program)")
 
 			def determine_event(x):
 				print_if_verbose( "\tEvent type: ", x)
@@ -565,8 +568,9 @@ def get_info(file_name, verbose):
 							#THIS IS NOT ON THE INTERNET FOR SOME REASON BUT IT'S A FREAKING THING AND I HAD TO FIGURE IT OUT FOR MYSELF
 							if x == None:
 								advance(4)
-							program_name = get_text().decode("hex")
-							print_if_verbose( "Composer Name: ", program_name)
+							print_if_verbose( "Composer meta event read at position ", fp)
+							composer_name = get_text().decode("hex")
+							print_if_verbose( "Composer Name: ", composer_name)
 							print_if_verbose( "fp is now: ", fp)
 						elif b2 == '02':
 							#Copyright notice
@@ -578,6 +582,7 @@ def get_info(file_name, verbose):
 							if x == None:
 								advance(4)
 							#read_sequence_track_name()
+							print_if_verbose( "Sequence/Track Name meta event read at position ", fp)
 							seq_track_name = get_text().decode("hex")
 							print_if_verbose( "Sequence/Track Name: ", seq_track_name)
 							print_if_verbose( "fp is now: ", fp)
@@ -585,6 +590,7 @@ def get_info(file_name, verbose):
 							#Instrument Name
 							if x == None:
 								advance(4)
+							print_if_verbose( "Instrument Name meta event read at position ", fp)
 							instrument_name = get_text().decode("hex")
 							print_if_verbose( "Instrument Name: ", instrument_name)
 							print_if_verbose( "fp is now: ", fp)
@@ -607,6 +613,7 @@ def get_info(file_name, verbose):
 							#Program Name
 							if x == None:
 								advance(4)
+							print_if_verbose( "Program Name meta event read at position ", fp)
 							name_hex = get_text()
 							program_name = name_hex.decode("hex")
 							song.set_title(program_name)
@@ -617,6 +624,7 @@ def get_info(file_name, verbose):
 							#THIS IS NOT ON THE INTERNET FOR SOME REASON BUT IT'S A FREAKING THING AND I HAD TO FIGURE IT OUT FOR MYSELF
 							if x == None:
 								advance(4)
+							print_if_verbose( "Composer Name meta event read at position ", fp)
 							program_name = get_text().decode("hex")
 							print_if_verbose( "Composer Name: ", program_name)
 							print_if_verbose( "fp is now: ", fp)
@@ -625,13 +633,13 @@ def get_info(file_name, verbose):
 							if x == None:
 								advance(4)
 							set_channel(read_midi_channel_prefix())
-							print_if_verbose( "MIDI channel set to", channel)
+							print_if_verbose( "MIDI channel set to ", channel)
 						elif b2 == '21':
 							#MIDI Port
 							if x == None:
 								advance(4)
 							port = read_midi_port()
-							print_if_verbose( "MIDI port set to port", port)
+							print_if_verbose( "MIDI port set to port ", port)
 						elif b2 == '2f':
 							#End of Track
 							if x == None:
@@ -659,43 +667,52 @@ def get_info(file_name, verbose):
 							read_key_signature()
 						elif b2 == '7f':
 							#Sequencer-Specific
+							print_if_verbose( "Sequence-Specific meta event read at position ", fp)
 							if x == None:
 								advance(4)
-							read_sequence_specific()
+							#read_sequence_specific()
+							variable_length_value = read_variable_length()
+							number_of_data_nibbles = variable_length_value * 2
+
+							program_name = get_text(number_of_data_nibbles).decode("hex")
+							print_if_verbose( "Sequence-Specific: ", program_name)
+							print_if_verbose( "fp is now: ", fp)
+						elif b2 == '4b':
+							raise error.MidiException("M-Live Tag event not yet dealt with. Please visit https://www.mixagesoftware.com/en/midikit/help/HTML/meta_events.html")
 						else:
 							if x != None:
-								raise error.MidiException("Unrecognized Meta event at position", fp, ". Expected 00-08, 20, 2f, 51, 54, 58, 59, or 7f, but got", b2)
+								raise error.MidiException("Unrecognized Meta event at position ", fp, ". Expected 00-08, 20, 2f, 51, 54, 58, 59, or 7f, but got ", b2)
 							n1 = last_event_type[:1]
 							n2 = last_event_type[1:2]
 							b2 = last_event_type[2:4]
 							'''print "n1: ", n1
 							print "n2: ", n2
 							print "b2: ", b2'''
-							print_if_verbose( "\t(Using last header (", last_event_type, ") because none identified at ", fp, ")")
+							print_if_verbose( "\t(Using last header ( ", last_event_type, ") because none identified at ", fp, ")")
 							new_event_type = False
 							determine_event(last_event_type)
 					else:
 						if x != None:
-							raise error.MidiException("Unrecognized event at position", fp, ". Expected 0x80-0xff, but got", data[fp:fp+2])
+							raise error.MidiException("Unrecognized event at position ", fp, ". Expected 0x80-0xff, but got ", data[fp:fp+2])
 						n1 = last_event_type[:1]
 						n2 = last_event_type[1:2]
 						b2 = last_event_type[2:4]
 						'''print "n1: ", n1
 						print "n2: ", n2
 						print "b2: ", b2'''
-						print_if_verbose( "\tUsing last header (", last_event_type, ") because none identified at ", fp, ")")
+						print_if_verbose( "\tUsing last header ( ", last_event_type, ") because none identified at ", fp, ")")
 						new_event_type = False
 						determine_event(last_event_type)
 				else:
 					if x != None:
-						raise error.MidiException("Unrecognized event at position", fp, ". Expected 0x80-0xff, but got", data[fp:fp+2])
+						raise error.MidiException("Unrecognized event at position ", fp, ". Expected 0x80-0xff, but got ", data[fp:fp+2])
 					n1 = last_event_type[:1]
 					n2 = last_event_type[1:2]
 					b2 = last_event_type[2:4]
 					'''print "n1: ", n1
 					print "n2: ", n2
 					print "b2: ", b2'''
-					print_if_verbose( "\tUsing last header (", last_event_type, ") because none identified at ", fp, ")")
+					print_if_verbose( "\tUsing last header ( ", last_event_type, ") because none identified at ", fp, ")")
 					new_event_type = False
 					determine_event(last_event_type)
 			determine_event(None)
@@ -705,15 +722,14 @@ def get_info(file_name, verbose):
 	song.set_num_events(num_events)
 	print_if_verbose( file_name, "is a valid MIDI file.")
 	number_of_notes = 0
-	print_if_verbose("&&& Notes: ", notes)
+	#print_if_verbose("&&& Notes: ", notes)
 	note_list = []
 	for c in notes:
 		for n in notes[c]:
 			note_list.append(n)
 			number_of_notes += 1
-			print_if_verbose( n.to_string(ticks_per_quarter_note))
+			#print_if_verbose( n.to_string(ticks_per_quarter_note))
 	print_if_verbose( "Number of notes in file: ", number_of_notes)
-	song.set_ticks_per_quarter_note(ticks_per_quarter_note)
 	song.set_notes(notes)
 	song.set_num_channels(len(channels))
 	return song

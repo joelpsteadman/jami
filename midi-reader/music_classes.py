@@ -8,8 +8,9 @@ class Song:
 	num_events = "Not set"
 	key = "Not set"
 	time_sig = ""
-	ticks_per_quarter_note = ""
+	ticks_per_quarter_note = None
 	notes = []
+	timed = False #if true, file works by timing in ticks, rather than rhythmic notation
 
 	def __init__(self):
 		self.title = "Not set"
@@ -27,11 +28,11 @@ class Song:
 		s += str(self.key)
 		s += "\ntime_sig: "
 		s += str(self.time_sig)
-		s += "\nnotes: "
-		for channel in self.notes:
-			for note in self.notes[channel]:
-				s += note.to_string(self.ticks_per_quarter_note)
-				s += "\n"
+		s += "\nnotes: \n"
+		# for channel in self.notes:
+		# 	for note in self.notes[channel]:
+		# 		s += note.to_string(self.ticks_per_quarter_note)
+		# 		s += "\n"
 		return s
 
 	def set_title(self, title):
@@ -61,78 +62,107 @@ class Song:
 	def add_to_db(self):
 		return None
 
-class Note:
-	pitch = 0
-	start = 0.0
-	duration = 0.0
-	channel = 0
+	def add_note(self, start, duration, pitch, channel):
+		note = self.Note(start, duration, pitch, channel, self.ticks_per_quarter_note)
+		return note
 
-	def __init__(self):
-		self.pitch = 0
-		self.start = 0
-		self.duration = 0
-		self.channel = 0
+	class Note:
+		pitch = 0
+		start = 0.0
+		duration = 0.0
+		channel = 0
 
-	def __init__(self, start, duration, pitch, channel):
-		self.pitch = pitch
-		self.start = start
-		self.duration = duration
-		self.channel = channel
+		def __init__(self):
+			self.pitch = 0
+			self.start = 0
+			self.duration = 0
+			self.channel = 0
 
-	#TODO instead of converting ticks to rhythm here, do it in the midi_reader file
-	def to_string(self, ticks_per_quarter_note = None):
+		def __init__(self, start, duration, pitch, channel, ticks_per_quarter_note = None):
 			def round_rhythm(time):
-				frac, whole = math.modf(time)
-				if frac > .9 or frac < .1:
-					frac = 0.0
-				elif frac > .2 and frac < .28:
-					frac = 0.25
-				elif frac > .29 and frac < .4:
-					frac = 1/3
-				elif frac > .45 and frac < .55:
-					frac = 0.5
-				elif frac > .56 and frac < .7:
-					frac = 2/3
-				elif frac > .7 and frac < .8:
-					frac = 0.75
-				print "\nRounded rythm: ", whole+frac
-				return whole+frac
-			notes = {	0 : 'C',
-						1 : 'C#',
-						2 : 'D',
-						3 : 'D#',
-						4 : 'E',
-						5 : 'F',
-						6 : 'F#',
-						7 : 'G',
-						8 : 'G#',
-						9 : 'A',
-						10: 'A#',
-						11: 'B',
-						}
-			string = ""
-			note = str(notes[self.pitch % 12]) + str(self.pitch / 12 + 1)
+					frac, whole = math.modf(time)
+					#print "&&& time: ", time, frac, whole
+					if frac > .9 or frac < .1:
+						frac = 0.0
+						# print "\nfrac > .9 or frac < .1 -> frac := 0.0"
+					elif frac > .2 and frac < .28:
+						frac = 0.25
+						# print "\nfrac > .2 -> frac := 0.25"
+					elif frac > .29 and frac < .4:
+						frac = 1.0/3.0
+						# print "\nfrac > .29 -> frac := "
+					elif frac > .45 and frac < .55:
+						frac = 0.5
+						# print "\nfrac > .2 -> frac := 0.25"
+					elif frac > .56 and frac < .7:
+						frac = 2.0/3.0
+						# print "\nfrac > .2 -> frac := 0.25"
+					elif frac > .7 and frac < .8:
+						frac = 0.75
+						# print "\nfrac > .2 -> frac := 0.25"
+					# else:
+						# print "!!!!!!!!!!"
+					#print "\nRounded rhythm: ", whole, " + ", frac, " = ", whole+frac
+					return whole+frac
+			self.pitch = pitch
+			self.channel = channel
 			if ticks_per_quarter_note == None:
-				string = "Channel: "
-				string += self.channel, "Pitch:", self.pitch, "start:", self.start*960, "seconds", "Duration:", self.duration*960, "seconds"
+					self.start = start*960
+					self.duration = duration*960
 			else:
-				string = "Channel: "
-				string += str(self.channel) + ", Pitch: " + note + ", start: " + str(round_rhythm(self.start / float(ticks_per_quarter_note))) + " quarter notes, Duration: " + str(round_rhythm(self.duration / float(ticks_per_quarter_note))) + " quarter notes"
-			return string
-			
-	def overlap(self, note):
-		a = self.start
-		b = self.start + self.duration
-		x = note.start
-		y = note.start + note.duration
+				# print "\t+++", start % 480, "ticks -> ", (round_rhythm(start / float(ticks_per_quarter_note))), "beats"
+				# print "\t+++", duration, "ticks -> ", (round_rhythm(duration / float(ticks_per_quarter_note))), "beats"
+				self.start = round_rhythm(start / float(ticks_per_quarter_note))
+				# print "{{{", duration, ticks_per_quarter_note, duration / float(ticks_per_quarter_note)
+				self.duration = round_rhythm(duration / float(ticks_per_quarter_note))
+				
 
-		if x >= b or a >=y:
-			return 0
-		elif a <= x and b <= y:
-			return 2 * (b-x) / (self.duration + note.duration)
-		elif a <= x and b >= y:
-			return 2 * (note.duration) / (self.duration + note.duration)
-		elif a >= x and b <= y:
-			return 2 * (y-a) / (self.duration + note.duration)
-		elif a >= x and b >= y:
-			return 2 * (self.duration) / (self.duration + note.duration)
+		#TODO instead of converting ticks to rhythm here, do it in the midi_reader file
+		def to_string(self, ticks_per_quarter_note = None):
+				#TODO make sharps an option
+				notes = {	0 : 'C',
+							1 : 'Db',
+							2 : 'D',
+							3 : 'Eb',
+							4 : 'E',
+							5 : 'F',
+							6 : 'Gb',
+							7 : 'G',
+							8 : 'Ab',
+							9 : 'A',
+							10: 'Bb',
+							11: 'B',
+							}
+				string = ""
+				note = str(notes[self.pitch % 12]) + str(self.pitch / 12 + 1)
+				# if ticks_per_quarter_note == None:
+				# 	string = "Channel: "
+				# 	string += self.channel, "Pitch:", self.pitch, "start:", self.start*960, "seconds", "Duration:", self.duration*960, "seconds"
+				# else:
+				# 	string = "Channel: "
+				# 	string += str(self.channel) + ", Pitch: " + note + ", start: " + str(round_rhythm(self.start / float(ticks_per_quarter_note))) + " quarter notes, Duration: " + str(round_rhythm(self.duration / float(ticks_per_quarter_note))) + " quarter notes"
+				
+				if ticks_per_quarter_note == None:
+					string = "Channel: "
+					string += self.channel, "Pitch:", self.pitch, "start:", self.start*960, "seconds", "Duration:", self.duration*960, "seconds"
+				else:
+					string = "Channel: "
+					string += str(self.channel) + ", Pitch: " + note + ", start: " + str(round(self.start, 2)) + " quarter notes, Duration: " + str(round(self.duration, 2)) + " quarter notes"
+				return string
+				
+		def overlap(self, note):
+			a = self.start
+			b = self.start + self.duration
+			x = note.start
+			y = note.start + note.duration
+
+			if x >= b or a >=y:
+				return 0
+			elif a <= x and b <= y:
+				return 2 * (b-x) / (self.duration + note.duration)
+			elif a <= x and b >= y:
+				return 2 * (note.duration) / (self.duration + note.duration)
+			elif a >= x and b <= y:
+				return 2 * (y-a) / (self.duration + note.duration)
+			elif a >= x and b >= y:
+				return 2 * (self.duration) / (self.duration + note.duration)

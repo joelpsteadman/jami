@@ -18,6 +18,9 @@ MIDI-READER:
 	Run this line to run the old version of the code*:
 	python output_midi_data.py Air_on_the_G_String.mid
 
+	The syntax for a command to read MIDI files is:
+	python test.py [file_path]+ [-v | -verbose]?
+
 	*this will dump a ton of information about the midi file into the console window
 
 MIDI-WRITER:
