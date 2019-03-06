@@ -11,7 +11,7 @@ files.append(sys.argv[argument_index])
 argument_index += 1
 done = False
 while len(sys.argv) > argument_index and not done:
-    if sys.argv[argument_index] == "-verbose" or sys.argv[2] == "-v":
+    if sys.argv[argument_index] == "-verbose" or sys.argv[argument_index] == "-v":
         print "VERBOSE"
         v = True
         done = True

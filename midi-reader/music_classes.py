@@ -29,10 +29,10 @@ class Song:
 		s += "\ntime_sig: "
 		s += str(self.time_sig)
 		s += "\nnotes: \n"
-		# for channel in self.notes:
-		# 	for note in self.notes[channel]:
-		# 		s += note.to_string(self.ticks_per_quarter_note)
-		# 		s += "\n"
+		for channel in self.notes:
+			for note in self.notes[channel]:
+				s += note.to_string(self.ticks_per_quarter_note)
+				s += "\n"
 		return s
 
 	def set_title(self, title):
@@ -81,10 +81,14 @@ class Song:
 		def __init__(self, start, duration, pitch, channel, ticks_per_quarter_note = None):
 			def round_rhythm(time):
 					frac, whole = math.modf(time)
-					#print "&&& time: ", time, frac, whole
-					if frac > .9 or frac < .1:
+					print "\tTime: ", time, "Fraction: ", frac, "Whole: ", whole
+					if  frac < .1:
 						frac = 0.0
-						# print "\nfrac > .9 or frac < .1 -> frac := 0.0"
+						print "\tfrac < .1 so frac is being rounded to 0.0"
+					elif frac > .9:
+						whole += 1
+						frac = 0.0
+						print "\tfrac > .9 so frac is being rounded to 0.0 and 1 is being added to whole"
 					elif frac > .2 and frac < .28:
 						frac = 0.25
 						# print "\nfrac > .2 -> frac := 0.25"
@@ -100,21 +104,23 @@ class Song:
 					elif frac > .7 and frac < .8:
 						frac = 0.75
 						# print "\nfrac > .2 -> frac := 0.25"
-					# else:
-						# print "!!!!!!!!!!"
-					#print "\nRounded rhythm: ", whole, " + ", frac, " = ", whole+frac
+					else:
+						print "!!!!!!!!!!"
+					print "\tRounded rhythm: ", whole, " + ", frac, " = ", whole+frac
 					return whole+frac
 			self.pitch = pitch
 			self.channel = channel
 			if ticks_per_quarter_note == None:
-					self.start = start*960
-					self.duration = duration*960
+				self.start = start*960
+				self.duration = duration*960
 			else:
 				# print "\t+++", start % 480, "ticks -> ", (round_rhythm(start / float(ticks_per_quarter_note))), "beats"
 				# print "\t+++", duration, "ticks -> ", (round_rhythm(duration / float(ticks_per_quarter_note))), "beats"
 				self.start = round_rhythm(start / float(ticks_per_quarter_note))
 				# print "{{{", duration, ticks_per_quarter_note, duration / float(ticks_per_quarter_note)
+				print "\tStart ticks: ", start, " / ", ticks_per_quarter_note, "ticks/qtr-note = ", self.start, "qtr-notes"
 				self.duration = round_rhythm(duration / float(ticks_per_quarter_note))
+				print "\tDuration ticks: ", duration, " / ", ticks_per_quarter_note, "ticks/qtr-note = ", self.duration, "qtr-notes"
 				
 
 		#TODO instead of converting ticks to rhythm here, do it in the midi_reader file

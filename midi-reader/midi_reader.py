@@ -54,6 +54,27 @@ def get_info(file_name, verbose):
 	for i in range(0,16):
 		key = i
 		notes[key] = list()
+		'''
+		notes now has the form:
+		notes{
+			0: ()
+			1: ()
+			2: ()
+			3: ()
+			4: ()
+			5: ()
+			6: ()
+			7: ()
+			8: ()
+			9: ()
+			10: ()
+			11: ()
+			12: ()
+			13: ()
+			14: ()
+			15: ()
+		}
+		'''
 
 	fp = 0 #file_position
 	remaining_track_len = 0 #to check that the track length specified is correct
@@ -203,9 +224,14 @@ def get_info(file_name, verbose):
 			binary_value += binary_string[1:8]
 			delta_time = int(binary_value, 2)
 			print_bytes(data[fp:fp+j+2], "Delta time: ", delta_time)
+			''' 
+				From what I can tell, delta time is actually the amount of time (ticks) that pass before the next event (not since the last one). Therefore, to have correct note (and other event) start times, I have to add the delta time after creating the start time.
+			'''
+			start_ticks = total_delta_time
 			total_delta_time += delta_time
 			print_if_verbose("Total delta time: ", total_delta_time)
 			print_if_verbose( "\t(Remaining_track_len: ", remaining_track_len, ")")
+
 			#TODO adjust time position
 			advance(j+2)
 			print_if_verbose( "\t(fp after delta_time: ", fp, ")")
@@ -256,8 +282,8 @@ def get_info(file_name, verbose):
 					print_if_verbose(nt[0], "=? ", key, " ", nt[1], "=? ", channel)
 					if nt[0] == key and nt[1] == channel and not found:
 						duration = total_delta_time - nt[2]
-						start = total_delta_time - duration
-						note = song.add_note(total_delta_time, duration, key, channel)
+						start = start_ticks
+						note = song.add_note(start_ticks, duration, key, channel)
 						print_if_verbose( "Note created: ", note.to_string(ticks_per_quarter_note))
 						notes[channel].append(note)
 						found = True
@@ -285,7 +311,7 @@ def get_info(file_name, verbose):
 					print_if_verbose("Event header:")
 					print_bytes(data[fp:fp+4], "nn vv")
 				print_if_verbose( "\tChannel: ", channel)
-				note_tuple = (key, channel, total_delta_time)
+				note_tuple = (key, channel, start_ticks)
 				found = False
 				if velocity == 0:
 					#if in list: create note object
@@ -293,7 +319,7 @@ def get_info(file_name, verbose):
 						#create note object
 						if nt[0] == key and nt[1] == channel and not found:
 							duration = total_delta_time - nt[2]
-							note = song.add_note(total_delta_time, duration, key, channel)
+							note = song.add_note(start_ticks, duration, key, channel)
 							print_if_verbose( "Note created: ", note.to_string(ticks_per_quarter_note))
 							notes[channel].append(note)
 							found = True
