@@ -28,11 +28,21 @@ class Song:
 		s += str(self.key)
 		s += "\ntime_sig: "
 		s += str(self.time_sig)
+<<<<<<< HEAD
+=======
 		s += "\nnotes: \n"
+<<<<<<< HEAD
 		for channel in self.notes:
 			for note in self.notes[channel]:
 				s += note.to_string(self.ticks_per_quarter_note)
 				s += "\n"
+=======
+		# for channel in self.notes:
+		# 	for note in self.notes[channel]:
+		# 		s += note.to_string(self.ticks_per_quarter_note)
+		# 		s += "\n"
+>>>>>>> develop
+>>>>>>> master
 		return s
 
 	def set_title(self, title):
@@ -53,6 +63,43 @@ class Song:
 	def set_time_sig(self, time):
 		self.time_sig = time
 
+<<<<<<< HEAD
+	def set_notes(self, notes):
+		self.num_tracks = notes
+
+class Note:
+	pitch = 0
+	start = 0.0
+	duration = 0.0
+	channel = 0
+	def __init__(self):
+		self.pitch = 0
+		self.start = 0
+		self.end = 0
+		self.channel = 0
+	def __init__(self, pitch, start, end, channel):
+		self.pitch = pitch
+		self.start = start
+		self.end = end
+		self.channel = channel
+
+	def overlap(self, note):
+		a = self.start
+		b = self.start + self.duration
+		x = note.start
+		y = note.start + note.duration
+
+		if x >= b or a >=y:
+			return 0
+		elif a <= x and b <= y:
+			return 2 * (b-x) / (self.duration + note.duration)
+		elif a <= x and b >= y:
+			return 2 * (note.duration) / (self.duration + note.duration)
+		elif a >= x and b <= y:
+			return 2 * (y-a) / (self.duration + note.duration)
+		elif a >= x and b >= y:
+			return 2 * (self.duration) / (self.duration + note.duration)
+=======
 	def set_ticks_per_quarter_note(self, val):
 		self.ticks_per_quarter_note = val
 
@@ -172,3 +219,4 @@ class Song:
 				return 2 * (y-a) / (self.duration + note.duration)
 			elif a >= x and b >= y:
 				return 2 * (self.duration) / (self.duration + note.duration)
+>>>>>>> develop

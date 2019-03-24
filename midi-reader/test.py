@@ -1,9 +1,18 @@
 #test.py
+<<<<<<< HEAD
+=======
 import sys
+>>>>>>> develop
 import music_classes
 import midi
 import midi_reader
 
+<<<<<<< HEAD
+song = midi_reader.get_info("Air_on_the_G_String.mid")
+#song = music_classes.Song("Air_on_the_G_String.mid")
+
+print song
+=======
 v = False
 files = list()
 argument_index = 1
@@ -26,3 +35,4 @@ for f in files:
     print "Song #", i, ":"
     print song
     i += 1
+>>>>>>> develop
