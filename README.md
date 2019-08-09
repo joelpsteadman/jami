@@ -36,3 +36,11 @@ MIDI-READER:
 	*this will dump a ton of information about the midi file into the console window
 
 MIDI-WRITER:
+
+GENERAL:
+	The goal of this project is to enjoy coding and do so in a way that it helpful to me professionally and to the community in a meaningful way:
+	IDEAS:
+		Write this in Python and Java and maybe a few other languages that I want to get aquainted with: R, Go, etc.
+		Use frameworks and technologies like MAVEN and AWS
+		Read MIDI files and change their formats. 
+		Analyze MIDI and music XML files based on music theory rules
