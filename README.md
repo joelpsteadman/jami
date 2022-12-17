@@ -20,15 +20,15 @@ MIDI-READER:
 
 	HOW TO RUN:
 	1) Download this repository
-	2) Navigate into the midi-reader folder on a terminal application with Python 2.7 installed (before running, it is a good idea to clear your console window)
+	2) Navigate into the MIDI-Reader folder on a terminal application with Python 3 installed (before running, it is a good idea to clear your console window)
 	3) Run the following line to create an object that represents Air_on_the_G_String.mid and to print out info about this file:
-	python test.py Air_on_the_G_String.mid
+	python Example.py
 
-	You can also add -v or -verbose to the end to print debugging info about the midi file reading process*:
-	python test.py Air_on_the_G_String.mid -v
+	<!-- You can also add -v or -verbose to the end to print debugging info about the midi file reading process*:
+	python test.py Air_on_the_G_String.mid -v -->
 
-	Run this line to run the old version of the code*:
-	python output_midi_data.py Air_on_the_G_String.mid
+	<!-- Run this line to run the old version of the code*:
+	python output_midi_data.py Air_on_the_G_String.mid -->
 
 	The syntax for a command to read MIDI files is:
 	python test.py [file_path]+ [-v | -verbose]?

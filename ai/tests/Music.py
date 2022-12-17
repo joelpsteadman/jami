@@ -65,7 +65,7 @@ def setKeySignature(num):
 	elif num == '249':
 		return 'CFLAT'
 	else:
-		print 'Error: unrecognized key signature code'
+		print('Error: unrecognized key signature code')
 
 def setTimeSignature(num, denom):
 	timeSignature = float(num) / (2 ** float(denom))

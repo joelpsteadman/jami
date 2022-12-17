@@ -27,7 +27,8 @@ harmonicDatabase = {'total' : 0}
 oneNoteDatabase = {'total' : 0}
 
 #reads all the MIDI files using the MIDI library
-fileNames = './m/Air_on_the_G_String', './m/Bach_Capriccio_in_Bb_Major_VI._Fugue', './m/BWV_245', './m/Chorale', './m/Das_walt_mein_Gott_Vater_Sohn_und_heilger_Geist', './m/Freu_dich_sehr_o_meine_seele', './m/Ich_dank_dir_lieber_Herre', './m/Jesu_meine_Freude', './m/Matthaus_Passion_Choral_No_63__O_Haupt_voll_Blut_und_Wunden', './m/Nun_danket_alle_Gott', './m/Nun_ruhen_alle_W_lder', './m/Oh_Haupt_voll_Blut_und_Wunden', './m/Orchestral_Suite_No.3', './m/Puer_natus_in_Betlehem', './m/Schafe_konnen_sicher_weiden', './m/Sei Lob und Preis mit Ehren', './m/Wachet_auf', './m/ADAGIO', './m/De_vesper', './m/Freude_trinken_alle_Wesen', './m/Inno_al_Creatore_di_', './m/Minuet_in_G', './m/Ode_to_Joy', './m/Sonata No. 14 3rd Movement', './m/Turkish_March', './m/El_Capitan', './m/Semper_Fidelis', './m/The_Gladiator_March-1', './m/The_Gladiator_March-2', './m/The_Stars_and_Stripes_Forever-1', './m/The_Stars_and_Stripes_Forever-2', './m/LIEBE', './m/Pilgrims_Chorus', './m/Svatebni_pochod_z_opery_Lohengrin', './m/Wedding_March'
+# fileNames = './m/Air_on_the_G_String', './m/Bach_Capriccio_in_Bb_Major_VI._Fugue', './m/BWV_245', './m/Chorale', './m/Das_walt_mein_Gott_Vater_Sohn_und_heilger_Geist', './m/Freu_dich_sehr_o_meine_seele', './m/Ich_dank_dir_lieber_Herre', './m/Jesu_meine_Freude', './m/Matthaus_Passion_Choral_No_63__O_Haupt_voll_Blut_und_Wunden', './m/Nun_danket_alle_Gott', './m/Nun_ruhen_alle_W_lder', './m/Oh_Haupt_voll_Blut_und_Wunden', './m/Orchestral_Suite_No.3', './m/Puer_natus_in_Betlehem', './m/Schafe_konnen_sicher_weiden', './m/Sei Lob und Preis mit Ehren', './m/Wachet_auf', './m/ADAGIO', './m/De_vesper', './m/Freude_trinken_alle_Wesen', './m/Inno_al_Creatore_di_', './m/Minuet_in_G', './m/Ode_to_Joy', './m/Sonata No. 14 3rd Movement', './m/Turkish_March', './m/El_Capitan', './m/Semper_Fidelis', './m/The_Gladiator_March-1', './m/The_Gladiator_March-2', './m/The_Stars_and_Stripes_Forever-1', './m/The_Stars_and_Stripes_Forever-2', './m/LIEBE', './m/Pilgrims_Chorus', './m/Svatebni_pochod_z_opery_Lohengrin', './m/Wedding_March'
+fileNames = ['/Users/joelbreit/Documents/Code/MIDI/python-midi/JAMI/ai/tests/m/Air_on_the_G_String']
 midiFiles = []
 for name in fileNames:
 	name += '.mid'
@@ -140,14 +141,14 @@ def initializeFiles():
 		for x in keySignatureEvents:
 			keySigMatch = re.match( r'.*data=\[([0-9]+), [0-9]+]\)', x)
 			if a != -1 and keySigMatch.group(1) != a:
-				print "Warning: Conflicting key signatures given in file \'", fileNames[i], '(', i ,')',  "\'!"
+				print("Warning: Conflicting key signatures given in file \'", fileNames[i], '(', i ,')',  "\'!")
 			a = keySigMatch.group(1)
 			if keySigMatch:
 				Music.keySignature = Music.setKeySignature(keySigMatch.group(1))
 		for x in timeSignatureEvents:
 			timeSigMatch = re.match( r'midi\.TimeSignatureEvent\(tick=[0-9]+, data=\[([0-9]+), ([0-9]+), ([0-9]+), ([0-9]+)\]', x)
 			if a != -1 and b != -1 and timeSigMatch.group(1) != a and timeSigMatch.group(2) != b:
-				print "Warning: Conflicting time signatures given in file \'", fileNames[i], '(', i ,')', "\'!"
+				print("Warning: Conflicting time signatures given in file \'", fileNames[i], '(', i ,')', "\'!")
 			a = timeSigMatch.group(1)
 			b = timeSigMatch.group(2)
 			if timeSigMatch:
@@ -174,7 +175,7 @@ def storeHarmonies():
 		harmonyEvents = re.findall(r'[.]*midi.NoteOnEvent\(tick=[0-9]+, channel=[0-9]+, data=\[[0-9]+, [1-9][0-9]*]\)\,[\s]*midi.NoteOnEvent\(tick=0, channel=[0-9]+, data=\[[0-9]+, [1-9][0-9]*]\)', harmonyMidiFiles[i], re.M)
 		harmonies = []
 		if len(harmonyEvents) == 0:
-			print 'H', i+1, 'has no harmonies?!?'
+			print('H', i+1, 'has no harmonies?!?')
 		for x in harmonyEvents:
 			matchObj = re.match(r'midi.NoteOnEvent\(tick=[0-9]+, channel=[0-9]+, data=\[([0-9]+), [1-9][0-9]*]\)\,[\s]*midi.NoteOnEvent\(tick=0, channel=[0-9]+, data=\[([0-9]+), [1-9][0-9]*]\)', x)
 			topNote = Music.convertToSemiTone(matchObj.group(1))

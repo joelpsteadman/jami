@@ -1,19 +1,18 @@
-#Music Classes
-import math
+from math import modf as get_fraction_and_integer_parts
+
+from Tools.Logger import Logger
 
 class Song:
-	title = "Not set"
-	num_tracks = "Not set"
-	num_channels = "Not set" #might not need
-	num_events = "Not set"
-	key = "Not set"
-	time_sig = ""
-	ticks_per_quarter_note = None
-	notes = []
-	timed = False #if true, file works by timing in ticks, rather than rhythmic notation
-
-	def __init__(self):
+	def __init__(self) -> None:
 		self.title = "Not set"
+		self.num_tracks = "Not set"
+		self.num_channels = "Not set" #might not need
+		self.num_events = 0
+		self.key = "Not set"
+		self.time_signature = "Not set"
+		self.ticks_per_quarter_note = "Not set"
+		self.notes = []
+		self.timed = False #if true, file works by timing in ticks, rather than rhythmic notation
 
 	def __str__(self):
 		s = "title: "
@@ -26,23 +25,12 @@ class Song:
 		s += str(self.num_events)
 		s += "\nkey: "
 		s += str(self.key)
-		s += "\ntime_sig: "
-		s += str(self.time_sig)
-<<<<<<< HEAD
-=======
-		s += "\nnotes: \n"
-<<<<<<< HEAD
+		s += "\ntime_signature: "
+		s += str(self.time_signature)
 		for channel in self.notes:
 			for note in self.notes[channel]:
 				s += note.to_string(self.ticks_per_quarter_note)
 				s += "\n"
-=======
-		# for channel in self.notes:
-		# 	for note in self.notes[channel]:
-		# 		s += note.to_string(self.ticks_per_quarter_note)
-		# 		s += "\n"
->>>>>>> develop
->>>>>>> master
 		return s
 
 	def set_title(self, title):
@@ -60,46 +48,9 @@ class Song:
 	def set_key(self, key):
 		self.key = key
 
-	def set_time_sig(self, time):
-		self.time_sig = time
+	def set_time_signature(self, time):
+		self.time_signature = time
 
-<<<<<<< HEAD
-	def set_notes(self, notes):
-		self.num_tracks = notes
-
-class Note:
-	pitch = 0
-	start = 0.0
-	duration = 0.0
-	channel = 0
-	def __init__(self):
-		self.pitch = 0
-		self.start = 0
-		self.end = 0
-		self.channel = 0
-	def __init__(self, pitch, start, end, channel):
-		self.pitch = pitch
-		self.start = start
-		self.end = end
-		self.channel = channel
-
-	def overlap(self, note):
-		a = self.start
-		b = self.start + self.duration
-		x = note.start
-		y = note.start + note.duration
-
-		if x >= b or a >=y:
-			return 0
-		elif a <= x and b <= y:
-			return 2 * (b-x) / (self.duration + note.duration)
-		elif a <= x and b >= y:
-			return 2 * (note.duration) / (self.duration + note.duration)
-		elif a >= x and b <= y:
-			return 2 * (y-a) / (self.duration + note.duration)
-		elif a >= x and b >= y:
-			return 2 * (self.duration) / (self.duration + note.duration)
-=======
 	def set_ticks_per_quarter_note(self, val):
 		self.ticks_per_quarter_note = val
 
@@ -127,47 +78,47 @@ class Note:
 
 		def __init__(self, start, duration, pitch, channel, ticks_per_quarter_note = None):
 			def round_rhythm(time):
-					frac, whole = math.modf(time)
-					print "\tTime: ", time, "Fraction: ", frac, "Whole: ", whole
-					if  frac < .1:
-						frac = 0.0
-						print "\tfrac < .1 so frac is being rounded to 0.0"
-					elif frac > .9:
-						whole += 1
-						frac = 0.0
-						print "\tfrac > .9 so frac is being rounded to 0.0 and 1 is being added to whole"
-					elif frac > .2 and frac < .28:
-						frac = 0.25
-						# print "\nfrac > .2 -> frac := 0.25"
-					elif frac > .29 and frac < .4:
-						frac = 1.0/3.0
-						# print "\nfrac > .29 -> frac := "
-					elif frac > .45 and frac < .55:
-						frac = 0.5
-						# print "\nfrac > .2 -> frac := 0.25"
-					elif frac > .56 and frac < .7:
-						frac = 2.0/3.0
-						# print "\nfrac > .2 -> frac := 0.25"
-					elif frac > .7 and frac < .8:
-						frac = 0.75
-						# print "\nfrac > .2 -> frac := 0.25"
-					else:
-						print "!!!!!!!!!!"
-					print "\tRounded rhythm: ", whole, " + ", frac, " = ", whole+frac
-					return whole+frac
+				frac, whole = get_fraction_and_integer_parts(time)
+				Logger.debug("\tTime:", time, "Fraction:", frac, "Whole:", whole)
+				if  frac < .1:
+					frac = 0.0
+					Logger.debug("\tfrac < .1 so frac is being rounded to 0.0")
+				elif frac > .9:
+					whole += 1
+					frac = 0.0
+					Logger.debug("\tfrac > .9 so frac is being rounded to 0.0 and 1 is being added to whole")
+				elif frac > .2 and frac < .28:
+					frac = 0.25
+					# Logger.debug("\nfrac > .2 -> frac := 0.25")
+				elif frac > .29 and frac < .4:
+					frac = 1.0/3.0
+					# Logger.debug("\nfrac > .29 -> frac := ")
+				elif frac > .45 and frac < .55:
+					frac = 0.5
+					# Logger.debug("\nfrac > .2 -> frac := 0.25")
+				elif frac > .56 and frac < .7:
+					frac = 2.0/3.0
+					# Logger.debug("\nfrac > .2 -> frac := 0.25")
+				elif frac > .7 and frac < .8:
+					frac = 0.75
+					# Logger.debug("\nfrac > .2 -> frac := 0.25")
+				else:
+					Logger.debug("!!!!!!!!!!")
+				Logger.debug("\tRounded rhythm: ", whole, " + ", frac, " = ", whole+frac)
+				return whole+frac
 			self.pitch = pitch
 			self.channel = channel
 			if ticks_per_quarter_note == None:
 				self.start = start*960
 				self.duration = duration*960
 			else:
-				# print "\t+++", start % 480, "ticks -> ", (round_rhythm(start / float(ticks_per_quarter_note))), "beats"
-				# print "\t+++", duration, "ticks -> ", (round_rhythm(duration / float(ticks_per_quarter_note))), "beats"
+				# Logger.debug("\t+++", start % 480, "ticks -> ", (round_rhythm(start / float(ticks_per_quarter_note))), "beats")
+				# Logger.debug("\t+++", duration, "ticks -> ", (round_rhythm(duration / float(ticks_per_quarter_note))), "beats")
 				self.start = round_rhythm(start / float(ticks_per_quarter_note))
-				# print "{{{", duration, ticks_per_quarter_note, duration / float(ticks_per_quarter_note)
-				print "\tStart ticks: ", start, " / ", ticks_per_quarter_note, "ticks/qtr-note = ", self.start, "qtr-notes"
+				# Logger.debug("{{{", duration, ticks_per_quarter_note, duration / float(ticks_per_quarter_note))
+				Logger.debug("\tStart ticks: ", start, " / ", ticks_per_quarter_note, "ticks/qtr-note = ", self.start, "qtr-notes")
 				self.duration = round_rhythm(duration / float(ticks_per_quarter_note))
-				print "\tDuration ticks: ", duration, " / ", ticks_per_quarter_note, "ticks/qtr-note = ", self.duration, "qtr-notes"
+				Logger.debug("\tDuration ticks: ", duration, " / ", ticks_per_quarter_note, "ticks/qtr-note = ", self.duration, "qtr-notes")
 				
 
 		#TODO instead of converting ticks to rhythm here, do it in the midi_reader file
@@ -187,7 +138,7 @@ class Note:
 							11: 'B',
 							}
 				string = ""
-				note = str(notes[self.pitch % 12]) + str(self.pitch / 12 + 1)
+				note = str(notes[self.pitch % 12]) + str(self.pitch // 12 + 1)
 				# if ticks_per_quarter_note == None:
 				# 	string = "Channel: "
 				# 	string += self.channel, "Pitch:", self.pitch, "start:", self.start*960, "seconds", "Duration:", self.duration*960, "seconds"
@@ -197,7 +148,7 @@ class Note:
 				
 				if ticks_per_quarter_note == None:
 					string = "Channel: "
-					string += self.channel, "Pitch:", self.pitch, "start:", self.start*960, "seconds", "Duration:", self.duration*960, "seconds"
+					string += self.channel, " Pitch: ", self.pitch, " start: ", self.start*960, " seconds ", " Duration: ", self.duration*960, " seconds"
 				else:
 					string = "Channel: "
 					string += str(self.channel) + ", Pitch: " + note + ", start: " + str(round(self.start, 2)) + " quarter notes, Duration: " + str(round(self.duration, 2)) + " quarter notes"
@@ -219,4 +170,3 @@ class Note:
 				return 2 * (y-a) / (self.duration + note.duration)
 			elif a >= x and b >= y:
 				return 2 * (self.duration) / (self.duration + note.duration)
->>>>>>> develop

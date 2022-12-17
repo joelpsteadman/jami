@@ -1,7 +1,7 @@
 import time #to time algorithms
 t0 = time.time()# times start-up time
 import random #for random note generation
-print 'Scanning MIDI files - this may take a moment..'
+print('Scanning MIDI files - this may take a moment..')
 import Database
 import Music
 import sys, os #for pretty printing and memory measurement
@@ -52,7 +52,7 @@ class Tune:
 			sys.stdout.write(Music.solfege[int(self.harmony[list_index][len(self.harmony[list_index])-1])])
 			print
 		sys.stdout.write('TYPE: '+self.type)
-		print '\tSCORE:', self.score
+		print('\tSCORE:', self.score)
 	def less_than_or_equal(self, other):
 		#used in quicksort algorithm in Database module
 		if self.score <= other.score:
@@ -194,24 +194,24 @@ def score(tune, explain):
 	noteaverage = Database.oneNoteDatabase['total'] / 12.0 #12 is number of possible distinct
 	numnotes = 0
 	for i in range(len(tune.melody) - 2):
-		#print tune.melody[i]
-		#print '# - avg = '
-		#print (Database.oneNoteDatabase[tune.melody[i]]), noteaverage, (Database.oneNoteDatabase[tune.melody[i]]) - noteaverage
+		#print(tune.melody[i]
+		#print('# - avg = '
+		#print((Database.oneNoteDatabase[tune.melody[i]]), noteaverage, (Database.oneNoteDatabase[tune.melody[i]]) - noteaverage
 		notescore += (Database.oneNoteDatabase[tune.melody[i]]) - noteaverage
 		numnotes += 1
 	for i in range(len(tune.harmony)):
 		for j in range(len(tune.harmony[i])):
-			#print tune.melody[i]
-			#print '# - avg = '
-			#print (Database.oneNoteDatabase[tune.harmony[i][j]]), noteaverage, (Database.oneNoteDatabase[tune.harmony[i][j]]) - noteaverage
+			#print(tune.melody[i]
+			#print('# - avg = '
+			#print((Database.oneNoteDatabase[tune.harmony[i][j]]), noteaverage, (Database.oneNoteDatabase[tune.harmony[i][j]]) - noteaverage
 			notescore += (Database.oneNoteDatabase[tune.harmony[i][j]]) - noteaverage
 			numnotes += 1
 	'''for n in tune.melody: #kind of stiff-arming - would be better to find another way to avoid chromaticism
 		if n not in Music.diatonicPitches:
 			melscore -= melaverage'''
-	#print 'total / (stddev * num)'
-	#print notescore, notestddev, numnotes
-	#print notescore / (notestddev * (numnotes))
+	#print('total / (stddev * num)'
+	#print(notescore, notestddev, numnotes
+	#print(notescore / (notestddev * (numnotes))
 	notescore = notescore / (notestddev * (numnotes))
 	
 	melscore = 0
@@ -258,33 +258,33 @@ def score(tune, explain):
 	harmscore = harmscore / (harmstddev * harmnum)
 
 	if explain:
-		print 'notescore:', notescore
-		print 'melscore:', melscore
-		print 'harmscore:', harmscore
-		print 'melstddev:', melstddev
-		print 'harmstddev:', harmstddev
-		print 'melaverage:', melaverage
-		print 'harmaverage:', harmaverage
-		print 'score:', (.1 * melscore) + (.9 * harmscore)
+		print('notescore:', notescore)
+		print('melscore:', melscore)
+		print('harmscore:', harmscore)
+		print('melstddev:', melstddev)
+		print('harmstddev:', harmstddev)
+		print('melaverage:', melaverage)
+		print('harmaverage:', harmaverage)
+		print('score:', (.1 * melscore) + (.9 * harmscore))
 	return (.1 * melscore) + (.5 * harmscore) + (.4 * notescore)
 
 def displayBest(length, num):
 	#TODO crashes when less than 10 attempts created
 	num = int(num)
-	print 'len(tuneAttempts):', len(tuneAttempts)
+	print('len(tuneAttempts):', len(tuneAttempts))
 	tuneList = []
 	for i in range(10):
 		tuneList.append(tuneAttempts[-(i+1)])
 	for i in range(10):
 		n = '#' + str(i+1)
-		print '**********', n , '**********'
+		print('**********', n , '**********')
 		tuneList[i].display()
 		score(tuneList[i], True)
-	print '************************'
+	print('************************')
 
 def displaySample(length, num):
 	num = int(num)
-	print 'len(tuneAttempts):', len(tuneAttempts)
+	print('len(tuneAttempts):', len(tuneAttempts))
 	tuneList = []
 	for i in range(11):
 		tuneList.append(tuneAttempts[((len(tuneAttempts)-1) * i) / 10])
@@ -293,28 +293,28 @@ def displaySample(length, num):
 		p = (i) * 10
 		string = str(p) + '%'
 		n = '#' + str(i+1)
-		print '**********', string , '**********'
+		print('**********', string , '**********')
 		tuneList[i].display()
 		score(tuneList[i], True)
-		print '******************************'
+		print('******************************')
 		i -= 1
 
 def displayWorst(length, num):
 	#TODO crashes when less than 10 attempts created
 	num = int(num)
-	print 'len(tuneAttempts):', len(tuneAttempts)
+	print('len(tuneAttempts):', len(tuneAttempts))
 	tuneList = []
 	for i in range(10):
 		tuneList.append(tuneAttempts[(i)])
 	for i in range(10):
 		n = '#' + str(i+1)
-		print '**********', n , '**********'
+		print('**********', n , '**********')
 		tuneList[i].display()
 		score(tuneList[i], True)
-	print '************************'
+	print('************************')
 
 def createMIDIs():
-	print 'not implemented yet'
+	print('not implemented yet')
 
 menu = '1) Create tunes\n' + '2) Results\n' + '3) Score your own melody\n' + '4) Give feedback\n' + '5) Create MIDIs\n' + '6) Exit\n'
 resultsMenu = '1) Display best 10\n' + '2) Display Sample of Results\n' + '3) Display Worst 10\n'
@@ -330,22 +330,22 @@ length = ''
 done = False
 t1 = time.time()
 total = t1-t0
-print 'Database initialized in', total, 'seconds'
-print 'Three note permutations scanned:\t', Database.threeNoteDatabase['total']
-print 'Two note permutations scanned:\t\t', Database.twoNoteDatabase['total']
-print 'Four note permutations scanned:\t\t', Database.fourNoteDatabase['total']
-print 'Harmonic combinations scanned:\t\t', Database.harmonicDatabase['total']
+print('Database initialized in', total, 'seconds')
+print('Three note permutations scanned:\t', Database.threeNoteDatabase['total'])
+print('Two note permutations scanned:\t\t', Database.twoNoteDatabase['total'])
+print('Four note permutations scanned:\t\t', Database.fourNoteDatabase['total'])
+print('Harmonic combinations scanned:\t\t', Database.harmonicDatabase['total'])
 while not done:
-	choice = raw_input(menu)
+	choice = input(menu)
 	if choice == '1':
-		num = raw_input('How many attempts would you like to make?\n')
-		type = raw_input('1) Random\n' + '2) Diatonic\n' + '3) Psuedoengineered\n')
-		length = raw_input('How long would you like your tune to be? (# of notes)\n')#TODO should put a lower and upper limit on this
+		num = input('How many attempts would you like to make?\n')
+		type = input('1) Random\n' + '2) Diatonic\n' + '3) Psuedoengineered\n')
+		length = input('How long would you like your tune to be? (# of notes)\n')#TODO should put a lower and upper limit on this
 		try:
 			num = int(num)
 		#TODO 
 		except ValueError:
-			print 'Invalid number entered'
+			print('Invalid number entered')
 			break
 		if type == '1'or type == '2'or type == '3':
 			if type == '1':
@@ -360,21 +360,21 @@ while not done:
 				percent = -1
 				if counter % 10000 == 0 or counter == num-1:
 					string = ''
-					print str(int(round(counter * 100 / num, 0)))+'%'
+					print(str(int(round(counter * 100 / num, 0)))+'%')
 					percent = round(counter * 100 / num, 0)
 				attempt(length, type)
 				counter += 1
 		else:
-			print 'Sorry, ', type,' is an invalid option'
+			print('Sorry, ', type,' is an invalid option')
 		t0 = time.time()
 		Database.sort(tuneAttempts)
 		t1 = time.time()
 		total = t1-t0
-		print len(tuneAttempts), 'melodies sorted in', total, 'seconds!'
+		print(len(tuneAttempts), 'melodies sorted in', total, 'seconds!')
 	elif choice == '2':
-		resultsChoice = raw_input(resultsMenu)
+		resultsChoice = input(resultsMenu)
 		if resultsChoice == '1':
-			print length
+			print(length)
 			displayBest(length, num)
 		elif resultsChoice == '2':
 			displaySample(length, num)
@@ -384,21 +384,21 @@ while not done:
 		input = -2
 		melody = []
 		while input != -1:
-			input = raw_input('Enter note value (0-11) or \'done\' to complete melody\n')
+			input = input('Enter note value (0-11) or \'done\' to complete melody\n')
 			if input == 'done':
-				print 'Thank you for entering your melody!'
+				print('Thank you for entering your melody!')
 				input = -1
 			else:
 				if len(str(input)) < 2:
 					input = '0' + input
 				melody.append(str(input))
 				if len(melody) > 2:
-					print 'That mume\'s (', melody[-3:],') score was: ', score(melody[-3:])
-					print 'Melody current score:', score(melody)
-		print 'This melody\'s score is: ', score(melody)
+					print('That mume\'s (', melody[-3:],') score was: ', score(melody[-3:]))
+					print('Melody current score:', score(melody))
+		print('This melody\'s score is: ', score(melody))
 	elif choice == '4':
 		#TODO check that tuneAttempts is not empty
-		feedback = raw_input('Which melody did you like? (from among the top ten)\n')
+		feedback = input('Which melody did you like? (from among the top ten)\n')
 		#TODO check for valid input
 		tune = tuneAttempts[int(feedback) - 1]
 		notes = tune.melody
@@ -422,9 +422,9 @@ while not done:
 		Database.storeInDatabase(harmonies, Database.harmonicDatabase)
 	elif choice == '5':
 		createMIDIs()
-		print 'not implemented yet :('
+		print('not implemented yet :(')
 	elif choice == '6':
 		done = True
-		print 'Goodbye!'
+		print('Goodbye!')
 	else:
-		print 'Error: didn\'t enter a valid choice'
+		print('Error: didn\'t enter a valid choice')
