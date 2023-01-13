@@ -1,4 +1,5 @@
 import Tools.Global_Variables as const
+import re
 
 from datetime import datetime
 
@@ -53,6 +54,13 @@ class Logger:
             print(output, end="\r")
         else:
             print(output)
+            # remove patterns starting with \033 and ending with m
+            file_output = re.sub(r'\033\[[0-9;]*m', '', output)
+            file_output += '\n'
+            if const.SAVE_OUTPUT:
+                with open(const.OUTPUT_FILE, 'a+') as log:
+                    log.write(str(file_output))
+
             # print(f"{Formats.WARNING}Warning: No active frommets remain. Continue?{Formats.END}")
 
     def info(*args, erase=False, delimiter=' '):

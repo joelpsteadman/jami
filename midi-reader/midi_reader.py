@@ -1,5 +1,3 @@
-import binascii
-import codecs
 import re as regex
 
 from Models.Song import Song
@@ -45,29 +43,7 @@ class MIDI_Reader:
         for i in range(0,16):
             key = i
             notes[key] = list()
-            '''
-            notes now has the form:
-            notes{
-                0: ()
-                1: ()
-                2: ()
-                3: ()
-                4: ()
-                5: ()
-                6: ()
-                7: ()
-                8: ()
-                9: ()
-                10: ()
-                11: ()
-                12: ()
-                13: ()
-                14: ()
-                15: ()
-            }
-            '''
 
-        # self.file_position = 0 # file_position
         self.remaining_track_len = 0 # to check that the track length specified is correct
 
         def advance(nibbles): 
@@ -101,12 +77,13 @@ class MIDI_Reader:
         # read header chunk:
 
         # check header chunk type
-        if regex.match(r'4d546864', file_hex_str) == None:
+        if not file_hex_str.startswith("4d546864"):
             Logger.error("File does not begin with \"MThd\"")
         # self.file_position = 8
         advance(8)
         # check header length
-        if regex.match(r'00000006', file_hex_str[self.file_position:self.file_position+8]) == None:
+        # if regex.match(r'00000006', file_hex_str[self.file_position:self.file_position+8]) == None:
+        if not file_hex_str[self.file_position:self.file_position+8] == "00000006":
             Logger.error("Unrecognized header length: expected \"00000006\", but got: ", file_hex_str[self.file_position:self.file_position+8])
         # self.file_position += 8
         advance(8)
@@ -192,7 +169,6 @@ class MIDI_Reader:
                 start_ticks = total_delta_time
                 total_delta_time += delta_time
 
-                # TODO adjust time position
                 advance(j+2)
                 # if int(first_byte, 16) < 128:
                     # Logger.error("Unrecognized event at position ", self.file_position, ". Expected 0x80-0xFF, but got ", data[self.file_position:self.file_position+2])
@@ -262,7 +238,7 @@ class MIDI_Reader:
                         set_channel(int(track_hex_str[self.file_position-1], 16) + 1)
                         # Logger.debug("\tEvent header:")
                         # print_bytes(track_hex_str[self.file_position-2:self.file_position+4], "Note on c nn vv")
-                        Logger.debug(f"\tChannel nibble at 0x{track_hex_str[self.file_position - 1]} = {channel} ")
+                        Logger.debug(f"\tChannel nibble {track_hex_str[self.file_position - 1]} = {channel} ")
                         Logger.debug(f"\tKey byte {track_hex_str[self.file_position:self.file_position+2]} at {hex_position()} = {key}")
                         Logger.debug(f"\tVelocity byte {track_hex_str[self.file_position + 2 : self.file_position + 4]} at {hex_position(2)} = {velocity}")
                         # else:
@@ -277,18 +253,18 @@ class MIDI_Reader:
                                 if nt[0] == key and nt[1] == channel and not found:
                                     duration = total_delta_time - nt[2]
                                     note = self.song_object.add_note(start_ticks, duration, key, channel)
-                                    Logger.debug("Note created: ", note.to_string(ticks_per_quarter_note))
+                                    Logger.debug("\tNote created: ", note.to_string(ticks_per_quarter_note))
                                     notes[channel].append(note)
                                     found = True
                                     Logger.debug("\tTurning off", key)
                                     list_of_notes.remove(nt) # remove from list_of_notes
                                     Logger.debug("\tNotes that are on: ", list_of_notes)
-                            Logger.debug("found: ", found)
+                            Logger.debug("\tfound: ", found)
                             if not found:
-                                Logger.debug("Note created with velocity of 0 at position")
+                                Logger.debug("\tNote created with velocity of 0 at position")
                         else:
                             # add note to list
-                            Logger.debug("\tTurning on", key)
+                            Logger.debug(f"\tTurning on {key} at {start_ticks} on channel {channel}")
                             list_of_notes.append(note_tuple)
                             Logger.debug("\tNotes that are on: ", list_of_notes)
                         advance(4)# add note event is 3 bytes long
@@ -316,12 +292,12 @@ class MIDI_Reader:
                                 duration = total_delta_time - nt[2]
                                 start = start_ticks
                                 note = self.song_object.add_note(start_ticks, duration, key, channel)
-                                Logger.debug("Note created: ", note.to_string(ticks_per_quarter_note))
+                                Logger.debug("\tNote created: ", note.to_string(ticks_per_quarter_note))
                                 notes[channel].append(note)
                                 found = True
                                 list_of_notes.remove(nt) # remove from list_of_notes
                                 Logger.debug("\tNotes that are on: ", list_of_notes)
-                            Logger.debug("found: ", found)
+                            Logger.debug("\tfound: ", found)
                         if not found:
                             Logger.error(f"Invalid note off event at position {self.file_position} ({hex(int(self.file_position/2))}). No such note of pitch {key} is currently on")
                         Logger.debug("Add/Pop Note Command at position: ", self.file_position)
@@ -337,7 +313,7 @@ class MIDI_Reader:
                     elif event_type == Events.PROGRAM_CHANGE:
                         # check new_program_# 
                         # send message
-                        Logger.warn(f"Program Change at position {self.file_position} ({hex(int(self.file_position/2))}). This project currently does nothing with these")
+                        Logger.warn(f"\tProgram Change at position {self.file_position} ({hex(int(self.file_position/2))}). This project currently does nothing with these")
                         print_bytes(track_hex_str[self.file_position-2:self.file_position+2], "Program change to ", int(track_hex_str[self.file_position:self.file_position+2], 16))
                         advance(2)
                     elif event_type == Events.PRESSURE_CHANGE:
@@ -354,34 +330,34 @@ class MIDI_Reader:
                         Logger.debug("Arbitrary text meta event read at position ", self.file_position)
                         advance(4)
                         text = get_text().decode("hex")
-                        Logger.debug("Text: ", text)
+                        Logger.debug("\tText: ", text)
                     elif event_type == Events.TRACK_NAME:
                         # Sequence/Track Name
                         # read_sequence_track_name()
-                        Logger.debug("Sequence/Track Name meta event read at position ", self.file_position)
+                        Logger.debug("\tSequence/Track Name meta event read at position ", self.file_position)
                         advance(4)
                         seq_track_name = get_text().decode("hex")
-                        Logger.debug("Sequence/Track Name: ", seq_track_name)
+                        Logger.debug("\tSequence/Track Name: ", seq_track_name)
                     elif event_type == Events.INSTRUMENT_NAME:
                         # Instrument Name
-                        Logger.debug("Instrument Name meta event read at position ", self.file_position)
+                        Logger.debug("\tInstrument Name meta event read at position ", self.file_position)
                         advance(4)
                         instrument_name = get_text().decode("hex")
-                        Logger.debug("Instrument Name: ", instrument_name)
+                        Logger.debug("\tInstrument Name: ", instrument_name)
                     elif event_type == Events.PROGRAM_NAME:
-                        Logger.debug(f"Program Name meta event read at position {self.file_position}")
+                        Logger.debug(f"\tProgram Name meta event read at position {self.file_position}")
                         program_name = get_text()
                         self.song_object.title = program_name
-                        Logger.debug(f"Program Name: \'{program_name}\'")
+                        Logger.debug(f"\tProgram Name: \'{program_name}\'")
                     elif event_type == Events.COMPOSER_NAME:
                         # THIS IS NOT ON THE INTERNET FOR SOME REASON BUT IT'S A FREAKING THING AND I HAD TO FIGURE IT OUT FOR MYSELF
-                        Logger.debug(f"Composer Name meta event read at position self.file_position")
+                        Logger.debug(f"\tComposer Name meta event read at position self.file_position")
                         composer_name = get_text()
-                        Logger.debug(f"Composer Name: \'{composer_name}\'")
+                        Logger.debug(f"\tComposer Name: \'{composer_name}\'")
                     elif event_type == Events.TIME_SIGNATURE:
-                        Logger.debug(f"Time signature event at {self.file_position} ({hex(int(self.file_position/2))})")
+                        Logger.debug(f"\tTime signature event at {self.file_position} ({hex(int(self.file_position/2))})")
                         if track_hex_str[self.file_position:self.file_position+2] != "04":
-                            Logger.error("Unrecognized Time Signature meta event at position ", self.file_position, "found ", track_hex_str[self.file_position+4:self.file_position+6], "but expected 0x04")
+                            Logger.error("\tUnrecognized Time Signature meta event at position ", self.file_position, "found ", track_hex_str[self.file_position+4:self.file_position+6], "but expected 0x04")
                         else:
                             numerator = int(track_hex_str[self.file_position+2:self.file_position+4], 16)
                             denominator = 2 ** int(track_hex_str[self.file_position+4:self.file_position+6], 16)
@@ -389,11 +365,11 @@ class MIDI_Reader:
                             bb = int(track_hex_str[self.file_position+8:self.file_position+10], 16) # number of notated 32nd notes in a MIDI quarter note (24 MIDI clocks)
                             time_signature = str(numerator) + "/" + str(denominator)
                             self.song_object.time_signature = time_signature
-                            Logger.debug("Time signature: ", numerator, "/", denominator)
+                            Logger.debug("\tTime signature: ", numerator, "/", denominator)
                         advance(10)
                     elif event_type == Events.KEY_SIGNATURE:
                         if track_hex_str[self.file_position:self.file_position+2] != "02":
-                            Logger.error("Unrecognized Key Signature meta event at position ", self.file_position, "found ", track_hex_str[self.file_position+4:self.file_position+6], "but expected 0x02")
+                            Logger.error("\tUnrecognized Key Signature meta event at position ", self.file_position, "found ", track_hex_str[self.file_position+4:self.file_position+6], "but expected 0x02")
                         else:
                             numsharps = int(track_hex_str[self.file_position+2:self.file_position+4], 16)
                             mode = track_hex_str[self.file_position+4:self.file_position+6]
@@ -429,31 +405,31 @@ class MIDI_Reader:
                                             4  : "C sharp minor"}
                             if mode == b"00":
                                 self.song_object.key = majorkeys[numsharps]
-                                Logger.debug("Key signature: ", majorkeys[numsharps])
+                                Logger.debug("\tKey signature: ", majorkeys[numsharps])
                             else:
                                 self.song_object.key = minorkeys[numsharps]
-                                Logger.debug("Key signature: ", minorkeys[numsharps])
+                                Logger.debug("\tKey signature: ", minorkeys[numsharps])
                         advance(6)
                     elif event_type == Events.END_OF_TRACK:
                         if track_hex_str[self.file_position:self.file_position+2] == '00':
                             Logger.debug("********************YAAAAAAY********************")
                             advance(2)
                         else:
-                            Logger.error("Unrecognized End of Track meta event found at position ", self.file_position, "found ", track_hex_str[self.file_position:self.file_position+2], "but expected 0x00")
+                            Logger.error("\tUnrecognized End of Track meta event found at position ", self.file_position, "found ", track_hex_str[self.file_position:self.file_position+2], "but expected 0x00")
                     elif event_type == Events.SEQUENCE_SPECIFIER:
                         # TODO this could be a variable # of bytes
                         # Sequencer-Specific
-                        Logger.error("Sequence-Specific meta event read at position ", self.file_position)
+                        Logger.error("\tSequence-Specific meta event read at position ", self.file_position)
                         # read_sequence_specific()
                         advance(4)
                         program_name = get_text().decode("hex")
-                        Logger.debug("Sequence-Specific: ", program_name)
+                        Logger.debug("\tSequence-Specific: ", program_name)
                     elif event_type == Events.SET_TEMPO:
                         if track_hex_str[self.file_position:self.file_position+2] != "03":
-                            Logger.error("Unrecognized Set Tempo meta event at position ", self.file_position, "found ", track_hex_str[self.file_position:self.file_position+2], "but expected 0x03")
+                            Logger.error("\tUnrecognized Set Tempo meta event at position ", self.file_position, "found ", track_hex_str[self.file_position:self.file_position+2], "but expected 0x03")
                         else:
                             microsec_per_quarter_note = int(track_hex_str[self.file_position+2:self.file_position+8], 16)
-                        Logger.debug(f"Tempo set to {microsec_per_quarter_note} microseconds per quarter note ({round(60000000/microsec_per_quarter_note)} beats per minute)")
+                        Logger.debug(f"\tTempo set to {microsec_per_quarter_note} microseconds per quarter note ({round(60000000/microsec_per_quarter_note)} beats per minute)")
                         advance(8)
                     elif event_type == Events.CONTROL_CHANGE:
                         # check control# , control_val
@@ -462,9 +438,9 @@ class MIDI_Reader:
                         print_bytes(track_hex_str[self.file_position:self.file_position+4], "Control change")
                         advance(2) # control change event is 1 byte after the header
                     elif event_type == Events.NOT_YET_DEALT_WITH:
-                        Logger.error(f"Encountered a header that is not yet dealt with in this program at position {self.file_position-4}")
+                        Logger.error(f"\tEncountered a header that is not yet dealt with in this program at position {self.file_position-4}")
                     else:
-                        Logger.error(f"Event type set to {event_type}")
+                        Logger.error(f"\tEvent type set to {event_type}")
 
                 def determine_event(event_header) -> str:
                     # advance(4) # All headers should be 4 nibbles long

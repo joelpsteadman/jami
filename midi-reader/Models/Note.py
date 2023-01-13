@@ -37,7 +37,7 @@ class Note:
                 frac = 0.75
                 # Logger.debug("\nfrac > .2 -> frac := 0.25")
             else:
-                Logger.debug("!!!!!!!!!!")
+                Logger.error("\tfrac is not being rounded to anything")
             Logger.debug("\tRounded rhythm: ", whole, " + ", frac, " = ", whole+frac)
             return whole+frac
         self.pitch = pitch

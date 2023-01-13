@@ -13,18 +13,19 @@ class Song:
 		self.timed = False #if true, file works by timing in ticks, rather than rhythmic notation
 
 	def __str__(self):
-		s = "title: "
+		s = "Title: "
 		s += str(self.title)
-		s += "\nnum_tracks: "
+		s += "\nNumber of tracks: "
 		s += str(self.num_tracks)
-		s += "\nnum_channels: "
+		s += "\nNumber of channels: "
 		s += str(self.num_channels)
-		s += "\nnum_events: "
+		s += "\nNumber of events: "
 		s += str(self.num_events)
-		s += "\nkey: "
+		s += "\nKey signature: "
 		s += str(self.key)
-		s += "\ntime_signature: "
+		s += "\nTime signature: "
 		s += str(self.time_signature)
+		s += "\n"
 		for channel in self.notes:
 			for note in self.notes[channel]:
 				s += note.to_string(self.ticks_per_quarter_note)
